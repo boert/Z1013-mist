@@ -49,41 +49,44 @@ The Z1013 core was developed and sucessfully tested with ARM firmware version AT
 
 
 to start a simulation switch to *simulation_modelsim* directory and do
+```
 **make**
 **make simulate**
+```
 
 to generate *core_z1013.rbf* switch to *synthesis_quartus* directory and call
+```
 **make all**
+```
 
 to reprogram the FPGA (JTAG-Blaster required) just do
+```
 **make program**
+```
 
 
 ## Known problems
 
-- sometimes the keyboard hang, no idee why
+- sometimes the keyboard hang, no idee why,
   solution: reset core
 
-- somtime keyboard start in hexadecimal mode, result in wired inputs
+- somtime keyboard start in hexadecimal mode, result in wired inputs,
   solution: switch to alphanumeric mode with *A*
 
-- top two pixel lines are not shown
+- top two pixel lines are not shown,
   solution: use your illusion to complete the chars
 
-- dowmload to memory work not with clock frequncy below 3 MHz
+- dowmload to memory work not with clock frequncy below 3 MHz,
   solution: use 4 MHz core frequency
 
 
 ## Project history
 
 original project by FPGAkuechle published 2012/2013 at mikrocontroller.net:
-(https://www.mikrocontroller.net/articles/Retrocomputing_auf_FPGA)
 https://www.mikrocontroller.net/articles/Retrocomputing_auf_FPGA
 
 ported by abnomane to Altera, April 2013:
-(http://abnoname.blogspot.de/2013/07/z1013-auf-fpga-portierung-fur-altera-de1.html)
 http://abnoname.blogspot.de/2013/07/z1013-auf-fpga-portierung-fur-altera-de1.html
 
 adapted to mist platform by Boert, released December 2017:
-(https://github.com/boert/Z1013-mist)
 https://github.com/boert/Z1013-mist
