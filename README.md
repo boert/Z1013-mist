@@ -26,7 +26,7 @@ Just load the core (core_z1013.rbf) on your SD card and start the mist device.
 
 When the Z1013 is running, you can load .z80-files via the OSD direct into the memory.
 Name, type, load address, end address and start address of the loaded file is show on top of screen.
-To start a loaded progem use *J <start address>*.
+To start a loaded progem use ```J <start address>```.
 The original keyboard layout is a littlebit strange, so expect unusal keys to control the games.
 
 The Z1013 core was developed and sucessfully tested with ARM firmware version ATH160123.
