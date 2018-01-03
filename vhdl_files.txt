@@ -9,7 +9,6 @@ work    rtl/top_mist.vhd
 work    rtl/redz0mb1e_pkg.vhd
 work    rtl/redz0mb1e.vhd
 work    rtl/addr_decode.vhd
-work    rtl/RAM.vhd
 work    rtl/video.vhd
 work    rtl/video_ram_pkg.vhd
 work    rtl/video_ram.vhd

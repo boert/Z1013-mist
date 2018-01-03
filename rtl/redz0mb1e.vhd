@@ -44,14 +44,17 @@ entity redz0mb1e is
     col_fg                : in  T_COLOR;
     col_bg                : in  T_COLOR;
     -- SRAM interface
-    ramAddr	          : out std_logic_vector(15 downto 0);
+    ramAddr               : out std_logic_vector(15 downto 0);
     ramData_in            : in  std_logic_vector(7 downto 0);
     ramData_out           : out std_logic_vector(7 downto 0);
-    ramOe_N	          : out std_logic; 
-    ramCE_N	          : out std_logic;
-    ramWe_N	          : out std_logic;
+    ramOe_N               : out std_logic; 
+    ramCE_N               : out std_logic;
+    ramWe_N               : out std_logic;
     --
-    rom_data_in           : in  std_logic_vector(7 downto 0)
+    rom_data_in           : in  std_logic_vector(7 downto 0);
+    -- user port (PIO port A) for joystick
+    x4_in                 : in  std_logic_vector(7 downto 0);
+    x4_out                : out std_logic_vector(7 downto 0)
 );
 end entity redz0mb1E;
 
@@ -288,7 +291,7 @@ begin
     begin
         if wr_n = '0' and sel_ram_n = '0' then
             --write to SRAM
-            ramWe_N     <= '0';		
+            ramWe_N     <= '0';     
             ramOe_N     <= '1';
             ramData_out <= data4cpu;
         else
@@ -318,10 +321,10 @@ begin
 --          data_o => data4ram,
 --          data_i => data4cpu,
 --          addr_i => addr(13 downto 0)
---  	);
+--      );
    
         
-    -- Boot State Controller		
+    -- Boot State Controller        
     -- keep CPU reading of NOP until ROM is reached
     boot_state_control: process(cpu_clk, reset_n)
     begin
@@ -329,10 +332,10 @@ begin
             boot_state <= '1';
         elsif rising_edge(cpu_clk) then
             if boot_state = '1' and sel_rom_n = '0' then --ROM selektiert
-                boot_state <= '0';	
+                boot_state <= '0';  
             end if;
         end if;
-    end process;	
+    end process;    
   
 --datain - mux
 -- PIO
@@ -359,6 +362,10 @@ pio_1: pio
     brdy_n   => rdyb4PIO_n,
     portb_o  => portb4pio,
     portb_i  => portb2pio);
+
+    -- PIO port A (X4) for user port (joystick)
+    x4_out      <= porta4pio;
+    porta2pio   <= x4_in;
 
 
     -- eingabegerät zu tastenbuffer

@@ -109,24 +109,35 @@ architecture rtl of top_mist is
     --   field separator: ,
     --   line separator: ;
     --   forbidden symbols: / 
+    --   max. 7 chars per entry
     --
-    constant config_str   : string(1 to 109) := 
+    constant config_str   : string(1 to 142) := 
         "Z1013.16;" &   -- soc name
         "Z80;" &        -- extension for image files, attn: upper case
         "O2,Scanlines,On,Off;" & 
         "O3,Keyboard,en,de;" & 
         "O4,Online help,Off,On;" &
         "O5,Color scheme,bk/wt,bl/yl;" & 
+        "O6,Joystick mode,prac.88,ju+te87;" & 
         "T1,Reset";
         -- O = option
         -- T = toggle
 
     -- named bit numbers
-    constant reset_bit    : natural := 1;
-    constant scanline_bit : natural := 2;
-    constant keyboard_bit : natural := 3;
-    constant help_bit     : natural := 4;
-    constant color_bit    : natural := 5;
+    constant reset_bit      : natural := 1;
+    constant scanline_bit   : natural := 2;
+    constant keyboard_bit   : natural := 3;
+    constant help_bit       : natural := 4;
+    constant color_bit      : natural := 5;
+    constant joystick_bit   : natural := 6;
+
+    -- named joystick directions
+    constant joy_right      : natural := 0;
+    constant joy_left       : natural := 1;
+    constant joy_down       : natural := 2;
+    constant joy_up         : natural := 3;
+    constant joy_fire_a     : natural := 4;
+    constant joy_fire_b     : natural := 5;
 
     
     ------------------------------------------------------------
@@ -159,6 +170,9 @@ architecture rtl of top_mist is
     signal ps2a_clk               : std_logic;
     signal ps2a_data              : std_logic;
     --
+    signal joystick_0             : std_logic_vector( 7 downto 0);
+    signal joystick_1             : std_logic_vector( 7 downto 0);
+    --
     --
     signal uart_data              : std_logic_vector (7 downto 0);
     signal uart_data_en           : std_logic;
@@ -179,7 +193,10 @@ architecture rtl of top_mist is
     --
     signal rom_dout               : std_logic_vector(7 downto 0);
     --
-    signal user_io_status         : std_logic_vector( 7 downto 0);
+    signal user_io_status         : std_logic_vector(7 downto 0);
+    -- user port (X4) signals
+    signal redz0mb1e_1_x4_in      : std_logic_vector(7 downto 0);
+    signal redz0mb1e_1_x4_out     : std_logic_vector(7 downto 0);
     --
     signal data_io_index          : std_logic_vector(4 downto 0);
     signal data_io_inst_download  : std_logic;
@@ -227,10 +244,6 @@ begin
 
     -- fixed default outputs
     uart_tx        <= uart_rx;
-
-    audior         <= '0';
-    audiol         <= '0';
-
 
     -- generate all necessary clocks
     altpll0_inst: entity work.altpll0
@@ -292,7 +305,7 @@ begin
         end if;
 
         -- all reset sources:
-        if  ( user_io_status( reset_bit) = '1')
+        if( user_io_status( reset_bit) = '1')
             or ( pll_locked = '0') 
             or ( data_io_inst_download = '1' and unsigned( data_io_index) = 0)
         then
@@ -337,7 +350,11 @@ begin
         ramOe_N	              => redz0mb1e_1_ramOe_N,       -- : out   std_logic; 
         ramCE_N	              => redz0mb1e_1_ramCE_N,       -- : out   std_logic;
         ramWe_N	              => redz0mb1e_1_ramWe_N,       -- : out   std_logic
-        rom_data_in           => rom_dout                   -- : in    std_logic_vector(7 downto 0);
+        --
+        rom_data_in           => rom_dout,                  -- : in    std_logic_vector(7 downto 0);
+        -- user port (PIO port A) for joystick
+        x4_in                 => redz0mb1e_1_x4_in,         -- : in    std_logic_vector(7 downto 0);
+        x4_out                => redz0mb1e_1_x4_out         -- : out   std_logic_vector(7 downto 0)
     );      
 
 
@@ -411,6 +428,61 @@ begin
             ps2clk       <= not ps2clk;
         end if;
     end process;
+   
+
+    ------------------------------------
+    -- connect joystick and sound to
+    -- user port X4   
+    --
+    process( user_io_status, joystick_0, joystick_1, redz0mb1e_1_x4_out)
+    begin
+
+        if user_io_status( joystick_bit) = '0' then
+            -- practic 1/88
+            -- joystick 0 (left jack)
+            if redz0mb1e_1_x4_out( 5) = '0' then
+                redz0mb1e_1_x4_in( 0) <= not joystick_0( joy_left);
+                redz0mb1e_1_x4_in( 1) <= not joystick_0( joy_right);
+                redz0mb1e_1_x4_in( 2) <= not joystick_0( joy_down);
+                redz0mb1e_1_x4_in( 3) <= not joystick_0( joy_up);
+                redz0mb1e_1_x4_in( 4) <= not ( joystick_0( joy_fire_a) or joystick_0( joy_fire_b));
+            end if;
+            -- joystick 1 (right jack)2
+            if redz0mb1e_1_x4_out( 6) = '0' then
+                redz0mb1e_1_x4_in( 0) <= not joystick_1( joy_left);
+                redz0mb1e_1_x4_in( 1) <= not joystick_1( joy_right);
+                redz0mb1e_1_x4_in( 2) <= not joystick_1( joy_down);
+                redz0mb1e_1_x4_in( 3) <= not joystick_1( joy_up);
+                redz0mb1e_1_x4_in( 4) <= not ( joystick_1( joy_fire_a) or joystick_1( joy_fire_b));
+            end if;
+            redz0mb1e_1_x4_in( 5) <= '0';
+            redz0mb1e_1_x4_in( 6) <= '0';
+            redz0mb1e_1_x4_in( 7) <= '0';
+
+            audiol  <= redz0mb1e_1_x4_out( 7);
+            audior  <= redz0mb1e_1_x4_out( 7);
+            
+        else
+            -- ju+te 6/87 (left or right jack)
+            redz0mb1e_1_x4_in( 0) <= '1';
+            redz0mb1e_1_x4_in( 1) <= '0';
+            redz0mb1e_1_x4_in( 2) <= '0';
+            redz0mb1e_1_x4_in( 3) <= '0';
+            redz0mb1e_1_x4_in( 4) <= not( joystick_0( joy_down)  or joystick_1( joy_down));
+            redz0mb1e_1_x4_in( 5) <= not( joystick_0( joy_left)  or joystick_1( joy_left));
+            redz0mb1e_1_x4_in( 6) <= not( joystick_0( joy_right) or joystick_1( joy_right));
+            redz0mb1e_1_x4_in( 7) <= not( joystick_0( joy_up)    or joystick_1( joy_up));
+            -- 'press' all directions same time on fire
+            if joystick_0( joy_fire_a) or joystick_0( joy_fire_b) or
+               joystick_1( joy_fire_a) or joystick_1( joy_fire_b) then
+                redz0mb1e_1_x4_in( 7 downto 4) <= "0000";
+            end if;
+
+            audiol  <= redz0mb1e_1_x4_out( 0);
+            audior  <= redz0mb1e_1_x4_out( 0);
+            
+        end if;
+    end process;
 
     
     ------------------------------------
@@ -432,6 +504,9 @@ begin
         --
 		status         => user_io_status,      -- : out std_logic_vector( 7 downto 0);
         --
+        -- internal interfaces
+        joystick_0     => joystick_0,          -- : out std_logic_vector( 7 downto 0);
+        joystick_1     => joystick_1,          -- : out std_logic_vector( 7 downto 0);
         -- connection to sd card emulation
 		sd_lba         => ( others => '0'),    -- : in  std_logic_vector( 31 downto 0);
 		sd_rd          => '0',                 -- : in  std_logic;

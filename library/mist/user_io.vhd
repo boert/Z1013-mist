@@ -22,6 +22,8 @@
 --
 -- simulated functions:
 -- 0x01 buttons & switches
+-- 0x02 joystick 0
+-- 0x03 joystick 1
 -- 0x05 ps/2 keyboard
 -- 0x14 read config string
 -- 0x15 write status (core reset)
@@ -29,8 +31,6 @@
 --
 -- not simulated (=untestet) functions (not needed by my core...):
 --
--- 0x02 joystick 0
--- 0x03 joystick 1
 -- 0x04 PS/2 mouse
 -- 0x17 SD sector read
 -- 0x18 SD sector write

@@ -51,7 +51,7 @@ not working files       remark
 -----------------       ------
 heartrunner__bro.z80    no load
 kings_valley_bro.z80    need more RAM
-ladder_9_4.z80          need more RAM
+ladder_8_4.z80          need more RAM
 miami.z80               didn't start
 pilot.z80               need more RAM
 ping-pong.z80           need more RAM
