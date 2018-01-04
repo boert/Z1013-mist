@@ -124,6 +124,7 @@ architecture rtl of top_mist is
         -- T = toggle
 
     -- named bit numbers
+    constant uc_reset_bit   : natural := 0;
     constant reset_bit      : natural := 1;
     constant scanline_bit   : natural := 2;
     constant keyboard_bit   : natural := 3;
@@ -172,6 +173,8 @@ architecture rtl of top_mist is
     --
     signal joystick_0             : std_logic_vector( 7 downto 0);
     signal joystick_1             : std_logic_vector( 7 downto 0);
+    signal buttons                : std_logic_vector( 1 downto 0);
+    signal switches               : std_logic_vector( 1 downto 0);
     --
     --
     signal uart_data              : std_logic_vector (7 downto 0);
@@ -305,9 +308,11 @@ begin
         end if;
 
         -- all reset sources:
-        if( user_io_status( reset_bit) = '1')
-            or ( pll_locked = '0') 
-            or ( data_io_inst_download = '1' and unsigned( data_io_index) = 0)
+        if( user_io_status( reset_bit) = '1')                                   -- menu reset
+            or ( user_io_status( uc_reset_bit) = '1')                           -- arm uc
+            or ( buttons( 1) = '1')                                             -- right device button
+            or ( pll_locked = '0')
+            or ( data_io_inst_download = '1' and unsigned( data_io_index) = 0)  -- download possible ROM image
         then
             reset_counter   <= 255;
             sys_reset       <= '1';
@@ -507,6 +512,8 @@ begin
         -- internal interfaces
         joystick_0     => joystick_0,          -- : out std_logic_vector( 7 downto 0);
         joystick_1     => joystick_1,          -- : out std_logic_vector( 7 downto 0);
+        buttons        => buttons,             -- : out std_logic_vector( 1 downto 0);
+        switches       => switches,            -- : out std_logic_vector( 1 downto 0);
         -- connection to sd card emulation
 		sd_lba         => ( others => '0'),    -- : in  std_logic_vector( 31 downto 0);
 		sd_rd          => '0',                 -- : in  std_logic;
@@ -537,8 +544,8 @@ begin
         sck         => spi_sck,               -- : in    std_logic;
         ss          => spi_ss2,               -- : in    std_logic;
         sdi         => spi_di,                -- : in    std_logic;
-        downloading => data_io_inst_download, -- : out   std_logic;              -- signal indication an active download
-        index       => data_io_index,         -- : out   std_logic_vector(4 downto 0); -- menu index used to upload the file
+        downloading => data_io_inst_download, -- : out   std_logic;                     -- signal indication an active download
+        index       => data_io_index,         -- : out   std_logic_vector(4 downto 0);  -- menu index used to upload the file
         -- external ram interface
         clk         => cpu_clk,               -- : in    std_logic;
         wr          => data_io_inst_wr,       -- : out   std_logic;
