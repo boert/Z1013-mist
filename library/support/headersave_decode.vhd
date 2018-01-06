@@ -47,7 +47,10 @@ entity headersave_decode is
         show_message    : out   std_logic;    -- enable or disable message display
         message_en      : out   std_logic;    -- 0->1 take new message character
         message         : out   character;
-        message_restart : out   std_logic     -- restart with new message
+        message_restart : out   std_logic;    -- restart with new message
+        -- autostart support signals
+        autostart_addr  : out   std_logic_vector(15 downto 0);
+        autostart_en    : out   std_logic     -- start signal
     );
 end entity headersave_decode;
 
@@ -84,7 +87,7 @@ architecture rtl of headersave_decode is
     end function to_hex;
 
 
-    type state_t is ( IDLE, ACTIVE);
+    type state_t is ( IDLE, ACTIVE, START);
     type reg_t is record
         state           : state_t;
         load_addr       : unsigned( 15 downto 0);
@@ -104,6 +107,8 @@ architecture rtl of headersave_decode is
         message         : character;
         message_restart : std_logic;    -- restart with new message
         display_counter : natural range 0 to display_counter_max;
+        --
+        autostart_en    : std_logic;
     end record;
 
     constant default_reg : reg_t :=
@@ -125,7 +130,9 @@ architecture rtl of headersave_decode is
         message_en      => '0',
         message         => ' ',
         message_restart => '0',
-        display_counter => 0
+        display_counter => 0,
+        --
+        autostart_en    => '0'
     );
 
     signal  r   : reg_t := default_reg;
@@ -149,12 +156,16 @@ begin
         message_en      <= v.message_en;
         message         <= v.message;
         message_restart <= v.message_restart;
+        --
+        autostart_addr  <= std_logic_vector( v.start_addr);
+        autostart_en    <= v.autostart_en;
 
         -- defaults
         v.addr_out        := std_logic_vector( v.load_addr);
         v.data_out        := data;
         v.message_restart := '0';
         v.message_en      := '0';
+        v.autostart_en    := '0';
 
         -- message display time limit
         if v.display_counter > 0 then
@@ -255,11 +266,16 @@ begin
                 end if;
 
                 if downloading = '0' then
-                    v.state             := IDLE;
+                    v.state             := START;
                     v.downloading_out   := '0';
                     v.wr_out            := '0';
                     v.bytecount         := 0;
                 end if;
+
+
+            when START =>
+                v.autostart_en  := '1';
+                v.state         := IDLE;
 
         end case;
 

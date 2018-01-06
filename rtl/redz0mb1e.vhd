@@ -28,13 +28,10 @@ entity redz0mb1e is
     cpu_clk               : in std_logic;
     cpu_hold_n            : in std_logic;
     video_clk             : in std_logic;
-    --
-    -- 7..0 are scancode 8:'1' key pressed, '0' -> key released
-    kyb_in                : in  std_logic_vector(7 downto 0);
-    key_released          : in  std_logic;
-    key_event             : in  std_logic;
-    key_extended          : in  std_logic;
-    keyboard_layout_en_de : in  std_logic;
+    -- ascii from keyboard (or serial line)
+    ascii                 : in std_logic_vector( 7 downto 0);
+    ascii_press           : in std_logic;
+    ascii_release         : in std_logic;
     -- vga interface
     red_o                 : out std_logic;
     blue_o                : out std_logic;
@@ -50,8 +47,6 @@ entity redz0mb1e is
     ramOe_N               : out std_logic; 
     ramCE_N               : out std_logic;
     ramWe_N               : out std_logic;
-    --
-    rom_data_in           : in  std_logic_vector(7 downto 0);
     -- user port (PIO port A) for joystick
     x4_in                 : in  std_logic_vector(7 downto 0);
     x4_out                : out std_logic_vector(7 downto 0)
@@ -112,12 +107,6 @@ architecture behave of redz0mb1E is
   signal astb2PIO_n    : std_logic := '1'; 
   signal bstb2PIO_n    : std_logic := '1'; 
   
-  -- keyboard
-  signal ascii         : std_logic_vector( 7 downto 0);
-  signal ascii_press   : std_logic;
-  signal ascii_release : std_logic;
-
-
   
   component T80s
     generic (
@@ -308,7 +297,7 @@ begin
     data4ram <= ramData_in;
 
 
---  -- internal RAM (no loader support)
+--  -- internal RAM (no *.z80 load possible)
 --  ram_sys_1: entity work.ram_sys
 --      generic map (
 --          G_System => DEV
@@ -382,21 +371,6 @@ pio_1: pio
 --      scancode_in           => kyb_in,                -- : in  std_logic_vector(7 downto 0);
 --      keyboard_layout_en_de => keyboard_layout_en_de  -- : in  std_logic
 --  );
-
-    scancode_ascii_inst: entity support.scancode_ascii 
-    port map
-    (
-        clk                   => cpu_clk,               -- : in    std_logic;
-        --
-        scancode              => kyb_in,                -- : in    std_logic_vector( 7 downto 0);
-        scancode_en           => key_event,             -- : in    std_logic;
-        --
-        layout_select         => keyboard_layout_en_de, -- : in    std_logic   -- 0 = en, 1 = de
-        --
-        ascii                 => ascii,                 -- : out   std_logic_vector( 7 downto 0);
-        ascii_press           => ascii_press,           -- : out   std_logic;
-        ascii_release         => ascii_release          -- : out   std_logic
-    );
 
 
     keyboard_matrix_inst : entity work.keyboard_matrix

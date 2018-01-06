@@ -111,7 +111,7 @@ architecture rtl of top_mist is
     --   forbidden symbols: / 
     --   max. 7 chars per entry
     --
-    constant config_str   : string(1 to 142) := 
+    constant config_str   : string(1 to 170) := 
         "Z1013.16;" &   -- soc name
         "Z80;" &        -- extension for image files, attn: upper case
         "O2,Scanlines,On,Off;" & 
@@ -119,6 +119,7 @@ architecture rtl of top_mist is
         "O4,Online help,Off,On;" &
         "O5,Color scheme,bk/wt,bl/yl;" & 
         "O6,Joystick mode,prac.88,ju+te87;" & 
+        "O7,Autostart,Enable,Disable;" &
         "T1,Reset";
         -- O = option
         -- T = toggle
@@ -131,6 +132,7 @@ architecture rtl of top_mist is
     constant help_bit       : natural := 4;
     constant color_bit      : natural := 5;
     constant joystick_bit   : natural := 6;
+    constant autostart_bit  : natural := 7;
 
     -- named joystick directions
     constant joy_right      : natural := 0;
@@ -148,39 +150,32 @@ architecture rtl of top_mist is
     signal sys_reset              : std_logic               := '1';
     signal reset_counter          : natural range 0 to 255  := 255;
     --                            
-    signal debug_data             : std_logic_vector(7 downto 0);
-    signal debug_addr             : std_logic_vector(15 downto 0);
-    signal key_released           : std_logic;
-    signal key_event              : std_logic;
-    signal key_extended           : std_logic;
-    signal kyb_char_rev           : std_logic_vector(7 downto 0);
+    signal scancode_en            : std_logic;
+    signal scancode               : std_logic_vector(7 downto 0);
     --                            
     signal clk_32Mhz              : std_logic;
-    signal fb_clk                 : std_logic;
     signal video_clk              : std_logic;
     signal cpu_clk                : std_logic;
     signal cpu_clk_fast           : std_logic;
     signal cpu_clk_slow           : std_logic;
     signal ram_clk                : std_logic;
-    signal leds                   : std_logic_vector(2 downto 0);
     --
-    -- cpu_clk ( 4 MHz) to 15 kHz
-    constant ps2clk_count_max     : integer := (4000000 / 15000 / 2) - 1;
+    -- cpu_clk ( 4 MHz) to 40 kHz
+    constant ps2clk_count_max     : integer := (4000000 / 40000 / 2) - 1;
     signal ps2clk_count           : integer range 0 to ps2clk_count_max := 0;
     signal ps2clk                 : std_logic                           := '0';
     signal ps2a_clk               : std_logic;
     signal ps2a_data              : std_logic;
+    --
+    signal ascii                  : std_logic_vector( 7 downto 0);
+    signal ascii_press            : std_logic;
+    signal ascii_release          : std_logic;
     --
     signal joystick_0             : std_logic_vector( 7 downto 0);
     signal joystick_1             : std_logic_vector( 7 downto 0);
     signal buttons                : std_logic_vector( 1 downto 0);
     signal switches               : std_logic_vector( 1 downto 0);
     --
-    --
-    signal uart_data              : std_logic_vector (7 downto 0);
-    signal uart_data_en           : std_logic;
-    signal RX_Busy_old            : std_logic;
-    signal Rx_Busy                : std_logic;
     --
     signal redz0mb1e_1_ramAddr      : std_logic_vector(15 downto 0);
     signal redz0mb1e_1_ramData_out  : std_logic_vector( 7 downto 0);
@@ -193,8 +188,6 @@ architecture rtl of top_mist is
     signal sdram_addr             : std_logic_vector(15 downto 0);
     signal sdram_oe               : std_logic;
     signal sdram_wr               : std_logic;
-    --
-    signal rom_dout               : std_logic_vector(7 downto 0);
     --
     signal user_io_status         : std_logic_vector(7 downto 0);
     -- user port (X4) signals
@@ -216,6 +209,17 @@ architecture rtl of top_mist is
     signal hs_message_en          : std_logic; 
     signal hs_message             : character;
     signal hs_message_restart     : std_logic;
+    signal hs_autostart_addr      : std_logic_vector(15 downto 0);
+    signal hs_autostart_en        : std_logic;
+    --
+    signal as_active              : std_logic;
+    signal as_ascii               : std_logic_vector( 7 downto 0);
+    signal as_press               : std_logic;
+    signal as_release             : std_logic;
+    --
+    signal sys_ascii              : std_logic_vector( 7 downto 0);
+    signal sys_press              : std_logic;
+    signal sys_release            : std_logic;
     --
     signal color_foreground       : std_logic_vector( 2 downto 0);
     signal color_background       : std_logic_vector( 2 downto 0);
@@ -263,37 +267,6 @@ begin
     cpu_clk <= cpu_clk_fast;
 
 
-    -- visual check the clock on LED
-    clock_blink_cpuclk: entity support.clock_blink
-    generic map 
-    (
-        g_ticks_per_sec => 4_000_000
-    )
-    port map
-    (
-        clk     => cpu_clk_slow,
-        blink_o => led_yellow_n
-    );
-    test_point_tp1  <= '0';
-
-    
-    ------------------------------------
-    -- convert ps2 signals 
-    -- to keyboard scancode
-    --
-    ps2_adapter: entity support.ps2_scancode
-    port map
-    (
-        clk            => cpu_clk,      -- : in    std_ulogic;
-        --
-        ps2_data       => ps2a_data,    -- : in    std_logic;
-        ps2_clock      => ps2a_clk,     -- : in    std_logic
-        --
-        scancode       => kyb_char_rev, -- : out   std_logic_vector( 7 downto 0);
-        scancode_en    => key_event     -- : out   std_logic
-    );
-
-
     ------------------------------------
     -- reset generator
     --
@@ -322,6 +295,63 @@ begin
     sys_reset_n <= not sys_reset;
 
 
+    -- visual check the clock on LED
+    clock_blink_cpuclk: entity support.clock_blink
+    generic map 
+    (
+        g_ticks_per_sec => 4_000_000
+    )
+    port map
+    (
+        clk     => cpu_clk_slow,
+        blink_o => led_yellow_n
+    );
+    test_point_tp1  <= '0';
+
+    
+    ------------------------------------
+    -- convert ps2 signals 
+    -- to keyboard scancode
+    --
+    ps2_adapter: entity support.ps2_scancode
+    port map
+    (
+        clk            => cpu_clk,      -- : in    std_ulogic;
+        --
+        ps2_data       => ps2a_data,    -- : in    std_logic;
+        ps2_clock      => ps2a_clk,     -- : in    std_logic
+        --
+        scancode       => scancode,     -- : out   std_logic_vector( 7 downto 0);
+        scancode_en    => scancode_en   -- : out   std_logic
+    );
+
+
+    -- convert ps2 scancode to ascii
+    -- bits 7..0 are scancode 8:'1' key pressed, '0' -> key released
+    scancode_ascii_inst: entity support.scancode_ascii 
+    port map
+    (
+        clk                   => cpu_clk,               -- : in    std_logic;
+        --
+        scancode              => scancode,              -- : in    std_logic_vector( 7 downto 0);
+        scancode_en           => scancode_en,           -- : in    std_logic;
+        --
+        layout_select         => user_io_status( keyboard_bit), -- : in    std_logic   -- 0 = en, 1 = de
+        --
+        ascii                 => ascii,                 -- : out   std_logic_vector( 7 downto 0);
+        ascii_press           => ascii_press,           -- : out   std_logic;
+        ascii_release         => ascii_release          -- : out   std_logic
+    );
+    
+
+    ------------------------------------
+    -- multiplex between keyboard inputs
+    --
+    sys_ascii   <= as_ascii when as_active else ascii;
+    sys_press   <= as_press when as_active else ascii_press;
+    sys_release <= as_press when as_active else ascii_release;
+
+
     ------------------------------------
     -- redzomb1e
     --
@@ -333,12 +363,10 @@ begin
         cpu_clk               => cpu_clk,                   -- : in std_logic;
         cpu_hold_n            => not( hs_decode_download),  -- : in std_logic;
         video_clk             => video_clk,                 -- : in std_logic;
-        --                    
-        kyb_in                => kyb_char_rev,
-        key_released          => key_released,
-        key_event             => key_event,
-        key_extended          => key_extended,
-        keyboard_layout_en_de => user_io_status( keyboard_bit),
+        -- ascii from keyboard or serial line
+        ascii                 => sys_ascii,                 -- : in std_logic_vector( 7 downto 0);
+        ascii_press           => sys_press,                 -- : in std_logic;
+        ascii_release         => sys_release,               -- : in std_logic;
         -- VGA                
         red_o                 => sys_red,
         blue_o                => sys_blue,
@@ -355,8 +383,6 @@ begin
         ramOe_N	              => redz0mb1e_1_ramOe_N,       -- : out   std_logic; 
         ramCE_N	              => redz0mb1e_1_ramCE_N,       -- : out   std_logic;
         ramWe_N	              => redz0mb1e_1_ramWe_N,       -- : out   std_logic
-        --
-        rom_data_in           => rom_dout,                  -- : in    std_logic_vector(7 downto 0);
         -- user port (PIO port A) for joystick
         x4_in                 => redz0mb1e_1_x4_in,         -- : in    std_logic_vector(7 downto 0);
         x4_out                => redz0mb1e_1_x4_out         -- : out   std_logic_vector(7 downto 0)
@@ -531,7 +557,7 @@ begin
 		ps2_kbd_data   => ps2a_data,           -- : out std_logic;
 		ps2_mouse_clk  => open,                -- : out std_logic;
 		ps2_mouse_data => open,                -- : out std_logic;
-		-- serial com port 
+		-- serial com port, not used jet 
 		serial_data    => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
 		serial_strobe  => '0'                  -- : in  std_logic
     );
@@ -576,7 +602,30 @@ begin
         show_message        => hs_show_message,         -- : out   std_logic;    -- enable or disable message display
         message_en          => hs_message_en,           -- : out   std_logic;    -- 0->1 take new message character
         message             => hs_message,              -- : out   character;
-        message_restart     => hs_message_restart       -- : out   std_logic     -- restart with new message
+        message_restart     => hs_message_restart,      -- : out   std_logic     -- restart with new message
+        -- autostart support signals
+        autostart_addr      => hs_autostart_addr,       -- : out   std_logic_vector(15 downto 0);
+        autostart_en        => hs_autostart_en          -- : out   std_logic     -- start signal
+    );
+    
+
+    ------------------------------------
+    -- auto starter for loaderd programs
+    -- emulate 'J xxxx' on keyboard
+    --
+    auto_start_inst: entity support.auto_start
+    port map
+    (
+        clk                 => cpu_clk,                 -- : in    std_logic;
+        enable              => not( user_io_status( autostart_bit)), -- : in    std_logic;
+        -- 
+        autostart_addr      => hs_autostart_addr,       -- : in    std_logic_vector(15 downto 0);
+        autostart_en        => hs_autostart_en,         -- : in    std_logic;    -- start signal
+        -- emulated keypresses
+        active              => as_active,               -- : out   std_logic;
+        ascii               => as_ascii,                -- : out   std_logic_vector( 7 downto 0);
+        ascii_press         => as_press,                -- : out   std_logic;
+        ascii_release       => as_release               -- : out   std_logic
     );
     
 

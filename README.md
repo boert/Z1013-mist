@@ -13,21 +13,25 @@ The second limit is the missing sound output.
 
 ## Getting started with Z1013.16
 
-Just load the core (core_z1013.rbf) on your SD card and start the mist device.
+Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the mist device.
 
 ### Overview of OSD options
 | feature           | values
 | ---               | ---
 | Load *.Z80        | load from SD card
-| scanlines         | on/off
-| keyboard layout   | de/en
-| online help       | on/off
-| color scheme      | black&white or blue&yellow
+| Scanlines         | on/off
+| Keyboard layout   | de/en
+| Online help       | on/off
+| Color scheme      | black&white or blue&yellow
+| Joystick mode     | practic 1/88 or ju+te 6/87
+| Autostart         | enable/disable
 
 When the Z1013 is running, you can load .z80-files via the OSD direct into the memory.
 Name, type, load address, end address and start address of the loaded file is show on top of screen.
-To start a loaded progem use ```J <start address>```.
-The original keyboard layout is a littlebit strange, so expect unusal keys to control the games.
+When Autostart is enabled (default) then the program will be started automaticly.
+Otherwise ```J <start address>```  will also jump to the start address.
+The original keyboard layout is a littlebit strange, so expect unusal keys to control the games,
+e.g. <U> for moving up und <space> for moving down.
 
 The Z1013 core was developed and sucessfully tested with ARM firmware version ATH160123.
 
@@ -67,11 +71,11 @@ make program
 
 ## Known problems
 
-- sometimes the keyboard hang, no idee why,
+- sometimes the keyboard hang, maybe a internal state machine is stuck,
 
-  solution: reset core
+  solution: type some spaces, reset core, type slowly
 
-- somtime keyboard start in hexadecimal mode, result in wired inputs,
+- somtimes keyboard start in hexadecimal mode, result in wired inputs,
 
   solution: switch to alphanumeric mode with *A*
 

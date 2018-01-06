@@ -23,6 +23,7 @@ TARGET=top_mist_tb
 #TARGET=online_help_tb
 #TARGET=scancode_tb
 #TARGET=keyboard_matrix_tb
+#TARGET=auto_start_tb
 
 
 LIBS = $(shell grep --invert "\#" ../vhdl_files.txt | cut --field=1 --delimiter=" " | sort | uniq)

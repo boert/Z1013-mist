@@ -4,6 +4,7 @@ work    rtl_tb/vga_monitor_tb.vhd
 work    rtl_tb/online_help_tb.vhd
 work    rtl_tb/scancode_tb.vhd
 work    rtl_tb/keyboard_matrix_tb.vhd
+work    rtl_tb/auto_start_tb.vhd
 # design files
 work    rtl/top_mist.vhd
 work    rtl/redz0mb1e_pkg.vhd
@@ -27,6 +28,7 @@ support library/support/clock_blink.vhd
 support library/support/ps2_scancode.vhd
 support library/support/scancode_ascii.vhd
 support library/support/headersave_decode.vhd
+support library/support/auto_start.vhd
 overlay library/overlay/scanline.vhd
 overlay library/overlay/online_help.vhd
 overlay library/overlay/chars.vhd
