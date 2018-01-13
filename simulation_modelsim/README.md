@@ -23,3 +23,5 @@ restart simulation in the Modelsim TCL console with:
 ```
 r
 ```
+
+Select the testbench for simulation from Makefile.

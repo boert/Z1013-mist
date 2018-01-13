@@ -2,7 +2,7 @@
 -- convert keyboard scancodes to ASCII
 -- two layouts are supported: de/en
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -493,8 +493,11 @@ architecture rtl of scancode_ascii is
     constant LEFT_SHIFT  : std_logic_vector( 7 downto 0) := x"12";
     constant RIGHT_SHIFT : std_logic_vector( 7 downto 0) := x"59";
     constant CAPS_LOCK   : std_logic_vector( 7 downto 0) := x"58";
+    constant HOME        : std_logic_vector( 7 downto 0) := x"6c";
     constant LEFT_ARROW  : std_logic_vector( 7 downto 0) := x"6b";
+    constant DOWN_ARROW  : std_logic_vector( 7 downto 0) := x"72";
     constant RIGHT_ARROW : std_logic_vector( 7 downto 0) := x"74";
+    constant UP_ARROW    : std_logic_vector( 7 downto 0) := x"75";
     constant CONTROL     : std_logic_vector( 7 downto 0) := x"14";
 
     -- registers
@@ -634,6 +637,24 @@ begin
                 when RIGHT_ARROW =>
                     if v.extended = '1' then
                         v.result    := x"09";
+                        set_states( v);
+                    end if;
+
+                when DOWN_ARROW =>
+                    if v.extended = '1' then
+                        v.result    := x"0a";
+                        set_states( v);
+                    end if;
+
+                when UP_ARROW =>
+                    if v.extended = '1' then
+                        v.result    := x"0b";
+                        set_states( v);
+                    end if;
+
+                when HOME =>
+                    if v.extended = '1' then
+                        v.result    := x"0c";
                         set_states( v);
                     end if;
 

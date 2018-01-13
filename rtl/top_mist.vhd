@@ -37,7 +37,7 @@ entity top_mist is
     port (
         -- system
         clk_27                    : in    std_logic_vector(1 downto 0);     -- clk 12, clk 13
-        reset_n                   : in    std_logic;                        -- clk 6, pin 89, really?
+        reset_n                   : in    std_logic;                        -- clk 6, pin 89, connected wit S2 and AMR JTAG reset
 
         -- basic input
         -- no inputs
@@ -160,13 +160,6 @@ architecture rtl of top_mist is
     signal cpu_clk_slow           : std_logic;
     signal ram_clk                : std_logic;
     --
-    -- cpu_clk ( 4 MHz) to 40 kHz
-    constant ps2clk_count_max     : integer := (4000000 / 40000 / 2) - 1;
-    signal ps2clk_count           : integer range 0 to ps2clk_count_max := 0;
-    signal ps2clk                 : std_logic                           := '0';
-    signal ps2a_clk               : std_logic;
-    signal ps2a_data              : std_logic;
-    --
     signal ascii                  : std_logic_vector( 7 downto 0);
     signal ascii_press            : std_logic;
     signal ascii_release          : std_logic;
@@ -243,7 +236,7 @@ architecture rtl of top_mist is
     signal onlinehelp_vsync_out   : std_logic;
 
     -- select the global clock source
-    alias  sys_clk      : std_logic is clk_27(0);
+    alias  sys_clk      : std_logic is clk_27( 0);
     signal pll_locked   : std_logic;
 
 
@@ -283,6 +276,7 @@ begin
         -- all reset sources:
         if( user_io_status( reset_bit) = '1')                                   -- menu reset
             or ( user_io_status( uc_reset_bit) = '1')                           -- arm uc
+            or ( reset_n = '0')                                                 -- reset button S2 / JTAG reset line
             or ( buttons( 1) = '1')                                             -- right device button
             or ( pll_locked = '0')
             or ( data_io_inst_download = '1' and unsigned( data_io_index) = 0)  -- download possible ROM image
@@ -306,24 +300,7 @@ begin
         clk     => cpu_clk_slow,
         blink_o => led_yellow_n
     );
-    test_point_tp1  <= '0';
-
-    
-    ------------------------------------
-    -- convert ps2 signals 
-    -- to keyboard scancode
-    --
-    ps2_adapter: entity support.ps2_scancode
-    port map
-    (
-        clk            => cpu_clk,      -- : in    std_ulogic;
-        --
-        ps2_data       => ps2a_data,    -- : in    std_logic;
-        ps2_clock      => ps2a_clk,     -- : in    std_logic
-        --
-        scancode       => scancode,     -- : out   std_logic_vector( 7 downto 0);
-        scancode_en    => scancode_en   -- : out   std_logic
-    );
+    test_point_tp1  <= clk_27( 1);
 
 
     -- convert ps2 scancode to ascii
@@ -347,9 +324,9 @@ begin
     ------------------------------------
     -- multiplex between keyboard inputs
     --
-    sys_ascii   <= as_ascii when as_active else ascii;
-    sys_press   <= as_press when as_active else ascii_press;
-    sys_release <= as_press when as_active else ascii_release;
+    sys_ascii   <= as_ascii     when as_active else ascii;
+    sys_press   <= as_press     when as_active else ascii_press;
+    sys_release <= as_release   when as_active else ascii_release;
 
 
     ------------------------------------
@@ -446,22 +423,6 @@ begin
    
 
     ------------------------------------
-    -- clock generator for ps2clk
-    -- used by user_io
-    --
-    process
-    begin
-        wait until rising_edge( cpu_clk);
-        if ps2clk_count > 0 then
-            ps2clk_count <= ps2clk_count - 1;
-        else
-            ps2clk_count <= ps2clk_count_max;
-            ps2clk       <= not ps2clk;
-        end if;
-    end process;
-   
-
-    ------------------------------------
     -- connect joystick and sound to
     -- user port X4   
     --
@@ -470,6 +431,11 @@ begin
 
         if user_io_status( joystick_bit) = '0' then
             -- practic 1/88
+            redz0mb1e_1_x4_in( 0) <= '1';
+            redz0mb1e_1_x4_in( 1) <= '1';
+            redz0mb1e_1_x4_in( 2) <= '1';
+            redz0mb1e_1_x4_in( 3) <= '1';
+            redz0mb1e_1_x4_in( 4) <= '1';
             -- joystick 0 (left jack)
             if redz0mb1e_1_x4_out( 5) = '0' then
                 redz0mb1e_1_x4_in( 0) <= not joystick_0( joy_left);
@@ -552,14 +518,20 @@ begin
 		sd_din         => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
 		sd_din_strobe  => open,                -- : out std_logic;
 		-- ps2 keyboard emulation
-		ps2_clk        => ps2clk,              -- : in  std_logic; -- 12-16khz provided by core
-		ps2_kbd_clk    => ps2a_clk,            -- : out std_logic;
-		ps2_kbd_data   => ps2a_data,           -- : out std_logic;
+		ps2_clk        => '0',                 -- : in  std_logic; -- 12-16khz provided by core
+		ps2_kbd_clk    => open,                -- : out std_logic;
+		ps2_kbd_data   => open,                -- : out std_logic;
 		ps2_mouse_clk  => open,                -- : out std_logic;
 		ps2_mouse_data => open,                -- : out std_logic;
 		-- serial com port, not used jet 
 		serial_data    => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
-		serial_strobe  => '0'                  -- : in  std_logic
+		serial_strobe  => '0',                 -- : in  std_logic
+        --
+        -- FPGA clk domain
+        clk            => cpu_clk,             -- : in  std_logic;
+        -- ps2 keyboard scancodes
+        scancode       => scancode,            -- : out std_logic_vector( 7 downto 0);
+        scancode_en    => scancode_en          -- : out std_logic
     );
     
     

@@ -71,7 +71,13 @@ package mist_components is
     	ps2_mouse_data      : out std_logic;
     	-- serial com port 
     	serial_data         : in  std_logic_vector( 7 downto 0);
-    	serial_strobe       : in  std_logic
+        serial_strobe       : in  std_logic;
+        --
+        -- FPGA clk domain
+        clk                 : in  std_logic;
+        -- ps2 keyboard scancodes
+        scancode            : out std_logic_vector( 7 downto 0);
+        scancode_en         : out std_logic
     );
     end component user_io;
 

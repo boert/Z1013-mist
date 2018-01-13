@@ -38,10 +38,10 @@ architecture testbench of scancode_tb is
     -- helpers
     procedure toggle( signal s : out std_logic) is
     begin
+        wait for clk_period;
         s <= '1';
         wait for clk_period;
         s <= '0';
-        wait for clk_period;
     end procedure toggle;
 
     signal tb_clk               : std_logic     := '0';
@@ -153,6 +153,23 @@ begin
 
         tb_scancode <= x"1c";
         toggle( tb_scancode_en);
+        
+        wait for 25 * clk_period;
+
+        tb_scancode <= x"1d";
+        toggle( tb_scancode_en);
+
+        wait for 10 * clk_period;
+
+        -- realistic timings, output from actual user_io
+        tb_scancode <= x"f0";
+        toggle( tb_scancode_en);
+        wait for 5 * clk_period;
+        tb_scancode <= x"1d";
+        toggle( tb_scancode_en);
+
+
+        wait for 10 * clk_period;
 
         simulation_run <= false;
         wait;

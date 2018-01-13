@@ -376,14 +376,12 @@ pio_1: pio
     keyboard_matrix_inst : entity work.keyboard_matrix
     port map
     (
-        -- Z1013 side
         clk            => cpu_clk,                       -- : in    std_logic;
+        -- Z1013 side
         column         => data4cpu,                      -- : in    std_logic_vector( 7 downto 0);
         column_en_n    => sel_io_kybrow_n,               -- : in    std_logic;
         row            => portb2pio,                     -- : out   std_logic_vector( 7 downto 0);  -- to PIO port B
-        -- keyboard side (scancode decoder)
-        ascii_clk      => cpu_clk,                       -- : in    std_logic;
-        reset_n        => reset_n,                       -- : in    std_logic;
+        -- keyboard side (from scancode decoder)
         ascii          => ascii,                         -- : in    std_logic_vector( 7 downto 0);
         ascii_press    => ascii_press,                   -- : in    std_logic;
         ascii_release  => ascii_release                  -- : in    std_logic;

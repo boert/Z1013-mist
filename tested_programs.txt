@@ -1,7 +1,7 @@
 Here is a list of games that will start on mist-Z1013.
 Sometimes there are problems with keyboard if you type too fast.
 Some games contain a basic interpreter, if you got 'READY>', just type RUN.
-The games will start automatically, if loaded from monitor promt, otherwise use '''J <startaddress''' to jump in.
+The games will start automatically, if loaded from monitor prompt, otherwise use '''J <startaddress''' to jump in.
 The start address is shown on top of screen on loading.
 
 filename                start command

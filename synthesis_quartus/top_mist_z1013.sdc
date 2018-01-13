@@ -39,14 +39,14 @@ set_time_format -unit ns -decimal_places 3
 #**************************************************************
 
 create_clock -name {clk_27[0]} -period 37.037 -waveform { 0.000 18.518 } [get_ports { clk_27[0] }]
+create_clock -name {spi_sck}   -period 40.000 -waveform { 0.000 20.000 } [get_ports { spi_sck }]
 
 
 #**************************************************************
 # Create Generated Clock
 #**************************************************************
 
-create_generated_clock -name {altpll0_1|altpll_component|auto_generated|pll1|clk[1]} -source [get_pins {altpll0_1|altpll_component|auto_generated|pll1|inclk[0]}] -duty_cycle 50.000 -multiply_by 40 -divide_by 27 -master_clock {clk_27[0]} [get_pins {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}] 
-
+derive_pll_clocks -create_base_clocks
 
 #**************************************************************
 # Set Clock Latency
@@ -58,11 +58,7 @@ create_generated_clock -name {altpll0_1|altpll_component|auto_generated|pll1|clk
 # Set Clock Uncertainty
 #**************************************************************
 
-set_clock_uncertainty -rise_from [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}] -rise_to [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
-set_clock_uncertainty -rise_from [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}] -fall_to [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
-set_clock_uncertainty -fall_from [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}] -rise_to [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
-set_clock_uncertainty -fall_from [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}] -fall_to [get_clocks {altpll0_1|altpll_component|auto_generated|pll1|clk[1]}]  0.020  
-
+derive_clock_uncertainty
 
 #**************************************************************
 # Set Input Delay
@@ -86,6 +82,7 @@ set_clock_uncertainty -fall_from [get_clocks {altpll0_1|altpll_component|auto_ge
 # Set False Path
 #**************************************************************
 
+set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {clk_27[0]}]
 
 
 #**************************************************************

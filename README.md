@@ -71,10 +71,6 @@ make program
 
 ## Known problems
 
-- sometimes the keyboard hang, maybe a internal state machine is stuck,
-
-  solution: type some spaces, reset core, type slowly
-
 - somtimes keyboard start in hexadecimal mode, result in wired inputs,
 
   solution: switch to alphanumeric mode with *A*

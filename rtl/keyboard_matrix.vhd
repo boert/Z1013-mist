@@ -2,7 +2,7 @@
 -- emulate keypress on Z1013 keyboard matrix
 -- input is ascii
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -20,6 +20,34 @@
 -- 
 ----------------------------------------------------------------------------------
 
+
+----------------------------------------------------------------------------------
+-- the original Z1013 keyboard is not ergonimic
+-- the buttons are rectangular ordered in 4 rows and 8 columns
+-- the first tree rows have multiple key assignments
+-- the last row contain four 'shift'-keys S1..S4, Left, Space, Right & Enter
+--
+-- the meaning of the 'shift'-keys is:
+--   no key   40h..57h             upper case A to W
+--   S1 key   58h..5fh, 30h..3fh   upper case X to Z, numbers, some special chars
+--   S2 key   78h..7fh, 20h..2fh   lower case x to z, special chars
+--   S3 key   60h..77h             lower case a to w
+--   S4 key   10h..17h, 00h..0fh   control chars
+--
+-- this emulation takes 8-bit-ASCII as input
+-- with an information if the key is pressed or released
+--
+-- this code emulate the additional press of shift-keys
+-- for a correct key detection the shift-key has to be pressed/released 
+--   before the main key
+--
+-- cursor up/ cursor down are mapped to 0Bh/0Ah
+-- home is mapped to 0Ch
+--
+-- Z1013 with ask every 2500 clock ticks for a new column
+-- complete matrix readout should take ca. 20000 ticks (5 ms @ 4 MHz) 
+----------------------------------------------------------------------------------
+
 library ieee;
 use ieee.std_logic_1164.all;
 use ieee.numeric_std.all;
@@ -28,14 +56,12 @@ use ieee.numeric_std.all;
 entity keyboard_matrix is
     port
     (
-        -- Z1013 side
         clk             : in    std_logic;
+        -- Z1013 side
         column          : in    std_logic_vector( 7 downto 0);
         column_en_n     : in    std_logic;
         row             : out   std_logic_vector( 7 downto 0);  -- to PIO port B
         -- ascii input
-        ascii_clk       : in    std_logic;
-        reset_n         : in    std_logic;
         ascii           : in    std_logic_vector( 7 downto 0);
         ascii_press     : in    std_logic;
         ascii_release   : in    std_logic
@@ -49,23 +75,26 @@ architecture rtl of keyboard_matrix is
     function delay_max return integer is
     begin
         -- pragma translate_off
-        return 10;                         -- some ticks for simulation
+        return 80;                      -- some ticks for simulation
         -- pragma translate_on
-        return 10 * 4_000_000 / 1_000;     -- 10 ms for synthesis
+        return 7 * 4_000_000 / 1_000;   -- 7 ms for synthesis
     end function delay_max;
 
-    type matrix_t is array( 0 to 9) of std_logic_vector( 3 downto 0);
 
-    signal selected_column  : natural range 0 to 9;
-    signal matrix           : matrix_t  := ( others => ( others => '0'));
-    signal s_keys           : std_logic_vector( 3 downto 0) := ( others => '0');
+    type matrix_t is array( 0 to 7) of std_logic_vector( 3 downto 0);
 
     type key_entry_t is record
         active  : std_logic;
-        column  : natural range 0 to 9;
+        column  : natural range 0 to 7;
         row     : natural range 0 to 3;
         s_keys  : std_logic_vector( 0 to 3);
     end record;
+    constant default_key_entry_c : key_entry_t := (
+        active  => '0',
+        column  => 0,
+        row     => 0,
+        s_keys  => "0000"
+    );
     type key_table_t is array( natural range <>) of key_entry_t;
 
     -- S1 Buchstaben XYZ, Zahlen, Sonderzeichen
@@ -222,17 +251,42 @@ architecture rtl of keyboard_matrix is
         16#f2# => ( '1', 1, 3, "0100"),
         16#f3# => ( '1', 2, 3, "0010"),
         16#f4# => ( '1', 3, 3, "0001"),
-        others => ( '0', 0, 0, "0000")
+        others => default_key_entry_c
     );
 
-    signal delay            : natural range 0 to delay_max - 1;
-    signal apply_keypress   : std_logic;
-    signal apply_keyrelease : std_logic;
-    signal table_address    : integer range 0 to 255;
-    signal table_entry      : key_entry_t;
-    --
-    signal key_press        : std_logic_vector( 3 downto 0);
-    signal key_release      : std_logic_vector( 3 downto 0);
+    type state_t is ( IDLE, GET_ENTRY, APPLY_S_KEY, APPLY_KEY, PAUSE);
+    type reg_t is record
+        state           : state_t;
+        table_address   : natural range 0 to 255;
+        table_entry     : key_entry_t;
+        --
+        keypress        : std_logic;
+        keyrelease      : std_logic;
+        delay           : natural range 0 to delay_max;
+        --
+        s_keys          : std_logic_vector( 0 to 3);
+        matrix          : matrix_t;
+    end record;
+
+    constant default_reg_c : reg_t :=
+    (
+        state           => IDLE,
+        table_address   => 0,
+        table_entry     => default_key_entry_c,
+        --
+        keypress        => '0',
+        keyrelease      => '0',
+        delay           => 0,
+        --
+        s_keys          => ( others => '0'),
+        matrix          => ( others => ( others => '0'))
+    );
+
+    signal r                : reg_t := default_reg_c;
+    signal r_in             : reg_t;
+
+    signal selected_column  : natural range 0 to 7;
+
 
 begin
     
@@ -242,101 +296,113 @@ begin
     process
     begin
         wait until rising_edge( clk);
-        -- latch selected column
         if column_en_n = '0' then
             selected_column <= to_integer( unsigned( column));
         end if;
     end process;
 
-    process( selected_column, matrix, s_keys)
+    -- map S-keys to first columns
+    process( selected_column, r)
     begin
         case selected_column is
             when 0 =>
-                row <= "1111" & not( s_keys( 0) & matrix( selected_column)(2 downto 0));
+                row <= "1111" & not( r.s_keys( 0) & r.matrix( selected_column)(2 downto 0));
             when 1 =>                             
-                row <= "1111" & not( s_keys( 1) & matrix( selected_column)(2 downto 0));
+                row <= "1111" & not( r.s_keys( 1) & r.matrix( selected_column)(2 downto 0));
             when 2 =>                             
-                row <= "1111" & not( s_keys( 2) & matrix( selected_column)(2 downto 0));
+                row <= "1111" & not( r.s_keys( 2) & r.matrix( selected_column)(2 downto 0));
             when 3 =>                             
-                row <= "1111" & not( s_keys( 3) & matrix( selected_column)(2 downto 0));
+                row <= "1111" & not( r.s_keys( 3) & r.matrix( selected_column)(2 downto 0));
             when others =>
-                row <= "1111" & not( matrix( selected_column));
+                row <= "1111" & not( r.matrix( selected_column));
         end case;
     end process;
 
 
-    -- keyboard side
-    -- cleared bits in matrix mean pressed key
-    process 
+    -- ascii domain
+    comb: process( r, ascii_press, ascii_release, ascii)
+        variable v : reg_t;
     begin
-        wait until rising_edge( ascii_clk);
-        -- shift key events
-        key_press       <= key_press( 2 downto 0)   & ascii_press;
-        key_release     <= key_release( 2 downto 0) & ascii_release;
+        v       := r;
 
-        -- read conversion table
-        table_address   <= to_integer( unsigned( ascii));
-        table_entry     <= ascii_key_table( table_address);
-        
-        if delay > 0 then
-            delay <= delay - 1;
-        end if;
-
-        -- apply delayed keypress
-        if delay = 1 then
+        -- fsm
+        case v.state is
             
-            if apply_keypress = '1' then
-                matrix( table_entry.column)( table_entry.row) <= '1';
-            end if;
-            
-            if apply_keyrelease = '1' then
-                matrix( table_entry.column)( table_entry.row) <= '0';
-            end if;
+            when IDLE =>
+                v.keypress      := '0';
+                v.keyrelease    := '0';
+                if ascii_press = '1' then
+                    v.table_address := to_integer( unsigned( ascii));
+                    v.state         := GET_ENTRY;
+                    v.keypress      := '1';
+                end if;
+                if ascii_release = '1' then
+                    v.table_address := to_integer( unsigned( ascii));
+                    v.state         := GET_ENTRY;
+                    v.keyrelease    := '1';
+                end if;
 
-        end if;
+            when GET_ENTRY =>
+                    -- read conversion table
+                    v.table_entry   := ascii_key_table( v.table_address);
+                    v.state         := APPLY_S_KEY;
 
-        
-        if table_entry.active = '1' and ( key_press( 3) = '1' or key_release( 3) = '1') then
-            -- activate main key later
-            delay               <= delay_max - 1;
-            apply_keypress      <= key_press( 3);
-            apply_keyrelease    <= key_release( 3);
+            when APPLY_S_KEY =>
+                if v.table_entry.active = '1' then
 
-            -- press additional S1 key
-            if table_entry.s_keys( 0) = '1' and key_press( 3) = '1' then
-                s_keys( 0) <= '1';
-            end if;
-            if table_entry.s_keys( 0) = '1' and key_release( 3) = '1' then
-                s_keys( 0) <= '0';
-            end if;
-            -- press additional S2 key
-            if table_entry.s_keys( 1) = '1' and key_press( 3) = '1' then
-                s_keys( 1) <= '1';
-            end if;
-            if table_entry.s_keys( 1) = '1' and key_release( 3) = '1' then
-                s_keys( 1) <= '0';
-            end if;
-            -- press additional S3 key
-            if table_entry.s_keys( 2) = '1' and key_press( 3) = '1' then
-                s_keys( 2) <= '1';
-            end if;
-            if table_entry.s_keys( 2) = '1' and key_release( 3) = '1' then
-                s_keys( 2) <= '0';
-            end if;
-            -- press additional S4 key
-            if table_entry.s_keys( 3) = '1' and key_press( 3) = '1' then
-                s_keys( 3) <= '1';
-            end if;
-            if table_entry.s_keys( 3) = '1' and key_release( 3) = '1' then
-                s_keys( 3) <= '0';
-            end if;
-        end if;
+                    if v.table_entry.s_keys /= "0000" then
+                        v.delay     := delay_max;
+                    else
+                        v.delay     := 0;
+                    end if;
 
-        if reset_n = '0' then
-            s_keys <= ( others => '0');
-            matrix <= ( others => ( others => '0'));
-            delay  <= 0;
-        end if;
+                    if v.keypress = '1' then
+                        v.s_keys    := v.table_entry.s_keys;
+                        v.state     := APPLY_KEY;
+                    else
+                        -- release all
+                        v.matrix    := ( others => ( others => '0'));
+                        v.s_keys    := "0000";
+                        v.delay     := delay_max;
+                        v.state     := PAUSE;
+                    end if;
+
+                else
+                    -- ignore ascii input
+                    v.state := IDLE;
+                end if;
+
+            when APPLY_KEY =>
+                -- wait, if necessary
+                if v.delay > 0 then
+                    v.delay := v.delay - 1;
+                else
+                    -- activate main key now
+                    if v.keypress = '1' then
+                        v.matrix( v.table_entry.column)( v.table_entry.row) := '1';
+                    end if;
+
+                    v.delay := delay_max;
+                    v.state := PAUSE;
+                end if;
+
+            when PAUSE =>
+                if v.delay > 0 then
+                    v.delay := v.delay - 1;
+                else
+                    v.state := IDLE;
+                end if;
+
+        end case;
+
+        r_in    <= v;
+    end process;
+
+
+    seq: process
+    begin
+        wait until rising_edge( clk);
+        r   <= r_in;
     end process;
 
 end architecture rtl;

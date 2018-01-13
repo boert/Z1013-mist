@@ -94,45 +94,108 @@ begin
         ascii_press    => tb_ascii_press,     -- : in    std_logic;
         ascii_release  => tb_ascii_release    -- : in    std_logic;
     );
+
+    z1013: process
+        variable column : natural range 0 to 7 := 0;
+    begin
+        if simulation_run then
+            wait for 3 * clk_period;
+            tb_column   <= std_logic_vector( to_unsigned( column, tb_column'length));
+
+            -- enable pulse
+            wait for 1 * clk_period;
+            tb_column_en_n  <= '0';
+            wait for 1 * clk_period;
+            tb_column_en_n  <= '1';
+
+            -- next column
+            if column < 7 then
+                column  := column + 1;
+            else
+                column  := 0;
+            end if;
+        else
+            wait;
+        end if;
+    end process;
    
 
     stimuli: process
     begin
+        report "press (and release) single keys";
         wait for 20 * clk_period;
 
         tb_ascii <= x"0d";
-
         press_key( tb_ascii_press, tb_ascii_release);
-        wait for 20 * clk_period;
+        wait for 200 * clk_period;
        
         release_key( tb_ascii_press, tb_ascii_release);
-        
-        wait for 20 * clk_period;
-        wait for 20 * clk_period;
+        wait for 500 * clk_period;
 
 
-        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'Z'), 8));
-
+        tb_ascii <= x"20";
         press_key( tb_ascii_press, tb_ascii_release);
-        wait for 20 * clk_period;
+        wait for 200 * clk_period;
        
         release_key( tb_ascii_press, tb_ascii_release);
-        
-        wait for 20 * clk_period;
-        wait for 20 * clk_period;
+        wait for 500 * clk_period;
 
 
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'X'), 8));
+        press_key( tb_ascii_press, tb_ascii_release);
+        wait for 200 * clk_period;
+       
+        release_key( tb_ascii_press, tb_ascii_release);
+        wait for 500 * clk_period;
 
+
+        report "press S1 key (mapped to F1)";
         tb_ascii <= x"f1";
-
         press_key( tb_ascii_press, tb_ascii_release);
-        wait for 20 * clk_period;
-       
+        wait for 200 * clk_period;
+
+        release_key( tb_ascii_press, tb_ascii_release);
+        wait for 500 * clk_period;
+        
+        report "press multiple keys";
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'q'), 8));
+        press_key( tb_ascii_press, tb_ascii_release);
+        wait for 200 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'S'), 8));
+        press_key( tb_ascii_press, tb_ascii_release);
+
+        wait for 500 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'q'), 8));
+        release_key( tb_ascii_press, tb_ascii_release);
+        wait for 200 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'S'), 8));
         release_key( tb_ascii_press, tb_ascii_release);
         
-        wait for 20 * clk_period;
-        wait for 20 * clk_period;
+        wait for 500 * clk_period;
 
+        report "press keys very fast";
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'A'), 8));
+        press_key( tb_ascii_press, tb_ascii_release);
+        wait for 70 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'B'), 8));
+        press_key( tb_ascii_press, tb_ascii_release);
+
+        wait for 500 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'B'), 8));
+        release_key( tb_ascii_press, tb_ascii_release);
+        wait for 70 * clk_period;
+
+        tb_ascii <= std_logic_vector( to_unsigned( character'pos( 'A'), 8));
+        release_key( tb_ascii_press, tb_ascii_release);
+
+
+        wait for 500 * clk_period;
+        report "simulation end";
         simulation_run <= false;
         wait;
 

@@ -25,7 +25,6 @@ mist    library/mist/user_io.vhd
 mist    library/mist/data_io.vhd
 mist    library/mist/osd.vhd
 support library/support/clock_blink.vhd
-support library/support/ps2_scancode.vhd
 support library/support/scancode_ascii.vhd
 support library/support/headersave_decode.vhd
 support library/support/auto_start.vhd

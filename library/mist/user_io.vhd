@@ -91,7 +91,13 @@ entity user_io is
         ps2_mouse_data      : out std_logic;
         -- serial com port 
         serial_data         : in  std_logic_vector( 7 downto 0);
-        serial_strobe       : in  std_logic
+        serial_strobe       : in  std_logic;
+        --
+        -- FPGA clk domain
+        clk                 : in  std_logic;
+        -- ps2 keyboard scancodes
+        scancode            : out std_logic_vector( 7 downto 0);
+        scancode_en         : out std_logic
     );
 end entity user_io;
 
@@ -153,6 +159,12 @@ architecture rtl of user_io is
     signal ps2_mouse_tx_byte    : std_logic_vector( 7 downto 0);
     signal ps2_mouse_parity     : std_logic;
     signal ps2_mouse_r_inc      : std_logic;
+
+
+    -- scancode synchronizer
+    signal scancode_toggle      : std_logic := '0';
+    signal scancode_toggle_1    : std_logic := '0';
+
 
 begin
 
@@ -442,6 +454,9 @@ begin
                             -- store incoming ps2 keyboard bytes 
                             ps2_kbd_fifo( to_integer(ps2_kbd_wptr)) <= sbuf & SPI_MOSI; 
                             ps2_kbd_wptr <= ps2_kbd_wptr + 1;
+                            -- 
+                            scancode        <= sbuf & SPI_MOSI;
+                            scancode_toggle <= not scancode_toggle;
 
                         when x"15" =>
                             status_reg  <= sbuf & SPI_MOSI;
@@ -487,6 +502,20 @@ begin
                 end if;
             end if;
         end if;
+    end process;
+
+    -- FPGA clk domain
+    process
+    begin
+        wait until rising_edge( clk);
+
+        -- synchronize scancode_en
+        scancode_en <= '0';
+        if scancode_toggle /= scancode_toggle_1 then
+            scancode_en <= '1';
+        end if;
+        scancode_toggle_1 <= scancode_toggle;
+
     end process;
 
 end architecture rtl;
