@@ -75,10 +75,6 @@ make program
 
   solution: switch to alphanumeric mode with *A*
 
-- top two pixel lines are not shown,
-
-  solution: use your illusion to complete the chars
-
 - dowmload to memory work not with clock frequncy below 3 MHz,
 
   solution: use 4 MHz core frequency

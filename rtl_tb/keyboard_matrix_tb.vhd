@@ -67,8 +67,6 @@ architecture testbench of keyboard_matrix_tb is
     signal tb_column_en_n     : std_logic   := '0';
     signal tb_row             : std_logic_vector( 7 downto 0);  -- to PIO port B
     -- ascii input
-    signal tb_ascii_clk       : std_logic   := '0';
-    signal tb_reset_n         : std_logic   := '1';
     signal tb_ascii           : std_logic_vector( 7 downto 0);
     signal tb_ascii_press     : std_logic   := '0';
     signal tb_ascii_release   : std_logic   := '0';
@@ -77,19 +75,16 @@ architecture testbench of keyboard_matrix_tb is
 begin
 
     tb_clk          <= not tb_clk after clk_period / 2 when simulation_run;
-    tb_ascii_clk    <= tb_clk;
 
     keyboard_matrix_inst : entity work.keyboard_matrix
     port map
     (
-        -- Z1013 side
         clk            => tb_clk,             -- : in    std_logic;
+        -- Z1013 side
         column         => tb_column,          -- : in    std_logic_vector( 7 downto 0);
         column_en_n    => tb_column_en_n,     -- : in    std_logic;
         row            => tb_row,             -- : out   std_logic_vector( 7 downto 0);  -- to PIO port B
         -- ascii input                        
-        ascii_clk      => tb_ascii_clk,       -- : in    std_logic;
-        reset_n        => tb_reset_n,         -- : in    std_logic;
         ascii          => tb_ascii,           -- : in    std_logic_vector( 7 downto 0);
         ascii_press    => tb_ascii_press,     -- : in    std_logic;
         ascii_release  => tb_ascii_release    -- : in    std_logic;

@@ -59,12 +59,12 @@ architecture rtl of online_help is
     constant overlay_startx : natural  := 810;
     constant overlay_starty : natural  := 140;
     --                                 
-    constant message_startx : natural  := 380;
-    constant message_starty : natural  :=  64;
+    constant message_startx : natural  := 379;
+    constant message_starty : natural  :=  65;
     --
     constant char_count     : natural  := 64;
-    constant char_width     : natural  := 5;
-    constant char_height    : natural  := 8;
+    constant char_width     : natural  :=  5;
+    constant char_height    : natural  :=  8;
     --
     constant text_width     : natural  := 36;
     constant text_heigth    : natural  := 30;

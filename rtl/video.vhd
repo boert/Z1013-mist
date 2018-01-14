@@ -196,7 +196,7 @@ begin
        --rowInChar
        if hcount = 820 then
          if vcount = 44 then
-           row_odd <= true;
+           row_odd <= false;
          else
            row_odd <= not row_odd;
          end if;
