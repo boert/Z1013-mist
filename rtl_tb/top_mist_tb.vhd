@@ -81,7 +81,7 @@ begin
     -- stimuli
 
     tb_clk27   <= not tb_clk27 after clk_period / 2 when simulation_run;
-    tb_reset_n <= '1' , '0' after 7.77 * clk_period;
+    tb_reset_n <= '0' , '1' after 7.77 * clk_period;
 
 
     top_mist_i0: entity work.top_mist

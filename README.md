@@ -6,12 +6,10 @@ The robotron Z1013 port for the mist board.
 This project emulates a robotron Z 1013 computer from 1984.
 The original Z 1013 was sold as a kit (without case and power supply).
 
-Contrary to the original 1 or 2 MHz we have 4 MHz clock frequency.
-The emulation is equipped with 16 kByte RAM (0000 - 3FFF).
-The second limit is the missing sound output.
+This Z1013.01 emulation use 2 MHz clock frequency and is equipped with 16 kByte RAM.
 
 
-## Getting started with Z1013.16
+## Getting started with Z1013.01
 
 Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the mist device.
 
@@ -36,6 +34,27 @@ e.g. <U> for moving up und <space> for moving down.
 The Z1013 core was developed and sucessfully tested with ARM firmware version ATH160123.
 
 
+## Supported features
+
+Z1013.01:
+- 16 kByte RAM (0000h - 3FFFh)
+- 1 kByte video RAM (EC00h - EFFFh)
+- 2 kByte ROM (F000h - F7FFh), Riesa monitor 2.02
+- keyboard mapping from PS/2 scancodes to 8x4 matrix
+- joystick on user port (PIO A)
+- frequency switching 2 MHz/ 4 MHz, port 04h, bit 6
+- sound output PIO B7 or user port (PIO)
+
+MiST additions:
+- load z80 files (headersave format) from SD-card
+- display file information on status line
+- autostart z80-files
+- scanline support
+- online help for most monitor commands
+- switchable color scheme
+- right push button on mist for reset
+
+![Z1013 with OSD (center), online help (right) and status line (top)](https://raw.githubusercontent.com/boert/Z1013-mist/master/documentation/Screenshot_Z1013_on_MiST.jpg)
 
 ## Project structure
 
@@ -52,19 +71,22 @@ The Z1013 core was developed and sucessfully tested with ARM firmware version AT
 | vhdl_files.txt         | list of used files (for simulation and synthesis)
 
 
-to start a simulation switch to directory *simulation_modelsim* and do
+to start a simulation change to directory *simulation_modelsim* and do
 ```
+cd simulation_modelsim
 make
 make simulate
 ```
 
-to generate *core_z1013.rbf* switch to directory *synthesis_quartus* and call
+to generate *core_z1013.rbf* use directory *synthesis_quartus* and start
 ```
+cd synthesis_quartus
 make all
 ```
 
 to reprogram the FPGA (JTAG-Blaster required) just do
 ```
+cd synthesis_quartus
 make program
 ```
 
@@ -74,10 +96,6 @@ make program
 - somtimes keyboard start in hexadecimal mode, result in wired inputs,
 
   solution: switch to alphanumeric mode with *A*
-
-- dowmload to memory work not with clock frequncy below 3 MHz,
-
-  solution: use 4 MHz core frequency
 
 
 ## Project history

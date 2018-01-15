@@ -113,7 +113,7 @@ architecture rtl of user_io is
 
     signal sbuf                 : std_logic_vector( 6 downto 0);
     signal cmd                  : std_logic_vector( 7 downto 0);
-    signal bit_cnt              : natural range 0 to 7;
+    signal bit_cnt              : natural range 0 to 7 := 7;
     signal byte_cnt             : unsigned( 7 downto 0);
     signal joystick0            : std_logic_vector( 5 downto 0);
     signal joystick1            : std_logic_vector( 5 downto 0);

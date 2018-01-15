@@ -49,7 +49,11 @@ entity redz0mb1e is
     ramWe_N               : out std_logic;
     -- user port (PIO port A) for joystick
     x4_in                 : in  std_logic_vector(7 downto 0);
-    x4_out                : out std_logic_vector(7 downto 0)
+    x4_out                : out std_logic_vector(7 downto 0);
+    --
+    sound_out             : out std_logic;
+    -- PETERS extension
+    clk_2MHz_4MHz         : out std_logic
 );
 end entity redz0mb1E;
 
@@ -75,6 +79,7 @@ architecture behave of redz0mb1E is
   signal data4RAM     : std_logic_vector(7 downto 0);
   signal data4ROM     : std_logic_vector(7 downto 0);
   signal data4video   : std_logic_vector(7 downto 0);
+  signal data4ext     : std_logic_vector(7 downto 0);
   signal data4CPU     : std_logic_vector(7 downto 0);
 
   --memory block select
@@ -106,6 +111,13 @@ architecture behave of redz0mb1E is
                          
   signal astb2PIO_n    : std_logic := '1'; 
   signal bstb2PIO_n    : std_logic := '1'; 
+
+  -- signals for peters extension
+  signal extension_reg : std_logic_vector(7 downto 0);
+  constant  ext_video_32_64     : natural := 7;
+  constant  ext_clk_2MHz_4MHz   : natural := 6;
+  constant  ext_2nd_zgen        : natural := 5;
+  constant  ext_romdis          : natural := 4;
   
   
   component T80s
@@ -356,6 +368,9 @@ pio_1: pio
     x4_out      <= porta4pio;
     porta2pio   <= x4_in;
 
+    -- PIO port B for sound
+    sound_out   <= portb4pio( 7);
+
 
     -- eingabegerät zu tastenbuffer
 --kyb_emu_1 : kyb_emu
@@ -453,6 +468,23 @@ data2cpu <= "00000000" when boot_state = '1'   else
             data4ROM   when sel_rom_n    = '0' else
             data4video when sel_vram_n   = '0' else
             data4RAM   when sel_ram_n    = '0' else
+            data4ext   when sel_io_1_n   = '0' else
             "11111111"; --data4RAM;
+
+
+    -- extension register 'PETERS-Platine'
+    process
+    begin
+        wait until rising_edge( cpu_clk);
+        if wr_n = '0' and sel_io_1_n = '0' then
+            extension_reg   <= data4cpu;
+        end if;
+        if reset_n = '0' then
+            extension_reg   <= ( others => '0');
+        end if;
+        data4ext    <= extension_reg;
+    end process;
+
+    clk_2MHz_4MHz <= extension_reg( ext_clk_2MHz_4MHz);
 
 end architecture;

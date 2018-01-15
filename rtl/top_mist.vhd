@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- top module for the Z1013 mist project
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -112,7 +112,7 @@ architecture rtl of top_mist is
     --   max. 7 chars per entry
     --
     constant config_str   : string(1 to 170) := 
-        "Z1013.16;" &   -- soc name
+        "Z1013.01;" &   -- soc name
         "Z80;" &        -- extension for image files, attn: upper case
         "O2,Scanlines,On,Off;" & 
         "O3,Keyboard,en,de;" & 
@@ -187,6 +187,10 @@ architecture rtl of top_mist is
     signal redz0mb1e_1_x4_in      : std_logic_vector(7 downto 0);
     signal redz0mb1e_1_x4_out     : std_logic_vector(7 downto 0);
     --
+    signal sound_out              : std_logic;
+    -- extension signals
+    signal clk_2MHz_4MHz          : std_logic;
+    --
     signal data_io_index          : std_logic_vector(4 downto 0);
     signal data_io_inst_download  : std_logic;
     signal data_io_inst_wr        : std_logic;
@@ -242,8 +246,10 @@ architecture rtl of top_mist is
 
 begin
 
-    -- fixed default outputs
-    uart_tx        <= uart_rx;
+    -- default outputs
+    uart_tx         <= uart_rx;
+    test_point_tp1  <= uart_rx when rising_edge( clk_27( 1));
+
 
     -- generate all necessary clocks
     altpll0_inst: entity work.altpll0
@@ -257,7 +263,11 @@ begin
         c3       => cpu_clk_slow, --  2 MHz
         c4       => ram_clk       -- 32 MHz
     );
-    cpu_clk <= cpu_clk_fast;
+
+    ------------------------------------
+    -- switch for cpu clk
+    -- activate 4 MHz also for downloading software to memory
+    cpu_clk <= cpu_clk_slow when clk_2MHz_4MHz = '0' and data_io_inst_download = '0'  else cpu_clk_fast;
 
 
     ------------------------------------
@@ -300,7 +310,6 @@ begin
         clk     => cpu_clk_slow,
         blink_o => led_yellow_n
     );
-    test_point_tp1  <= clk_27( 1);
 
 
     -- convert ps2 scancode to ascii
@@ -362,7 +371,11 @@ begin
         ramWe_N	              => redz0mb1e_1_ramWe_N,       -- : out   std_logic
         -- user port (PIO port A) for joystick
         x4_in                 => redz0mb1e_1_x4_in,         -- : in    std_logic_vector(7 downto 0);
-        x4_out                => redz0mb1e_1_x4_out         -- : out   std_logic_vector(7 downto 0)
+        x4_out                => redz0mb1e_1_x4_out,        -- : out   std_logic_vector(7 downto 0)
+        --
+        sound_out             => sound_out,                 -- : out std_logic;
+        -- PETERS extension
+        clk_2MHz_4MHz         => clk_2MHz_4MHz              -- : out std_logic
     );      
 
 
@@ -426,7 +439,7 @@ begin
     -- connect joystick and sound to
     -- user port X4   
     --
-    process( user_io_status, joystick_0, joystick_1, redz0mb1e_1_x4_out)
+    process( user_io_status, joystick_0, joystick_1, redz0mb1e_1_x4_out, sound_out)
     begin
 
         if user_io_status( joystick_bit) = '0' then
@@ -444,7 +457,7 @@ begin
                 redz0mb1e_1_x4_in( 3) <= not joystick_0( joy_up);
                 redz0mb1e_1_x4_in( 4) <= not ( joystick_0( joy_fire_a) or joystick_0( joy_fire_b));
             end if;
-            -- joystick 1 (right jack)2
+            -- joystick 1 (right jack)
             if redz0mb1e_1_x4_out( 6) = '0' then
                 redz0mb1e_1_x4_in( 0) <= not joystick_1( joy_left);
                 redz0mb1e_1_x4_in( 1) <= not joystick_1( joy_right);
@@ -452,12 +465,12 @@ begin
                 redz0mb1e_1_x4_in( 3) <= not joystick_1( joy_up);
                 redz0mb1e_1_x4_in( 4) <= not ( joystick_1( joy_fire_a) or joystick_1( joy_fire_b));
             end if;
-            redz0mb1e_1_x4_in( 5) <= '0';
-            redz0mb1e_1_x4_in( 6) <= '0';
-            redz0mb1e_1_x4_in( 7) <= '0';
+            redz0mb1e_1_x4_in( 5) <= redz0mb1e_1_x4_out( 5);
+            redz0mb1e_1_x4_in( 6) <= redz0mb1e_1_x4_out( 6);
+            redz0mb1e_1_x4_in( 7) <= redz0mb1e_1_x4_out( 7);
 
-            audiol  <= redz0mb1e_1_x4_out( 7);
-            audior  <= redz0mb1e_1_x4_out( 7);
+            audiol  <= redz0mb1e_1_x4_out( 7) or sound_out;
+            audior  <= redz0mb1e_1_x4_out( 7) or sound_out;
             
         else
             -- ju+te 6/87 (left or right jack)
@@ -475,8 +488,8 @@ begin
                 redz0mb1e_1_x4_in( 7 downto 4) <= "0000";
             end if;
 
-            audiol  <= redz0mb1e_1_x4_out( 0);
-            audior  <= redz0mb1e_1_x4_out( 0);
+            audiol  <= redz0mb1e_1_x4_out( 0) or sound_out;
+            audior  <= redz0mb1e_1_x4_out( 0) or sound_out;
             
         end if;
     end process;
@@ -554,7 +567,7 @@ begin
     
     ------------------------------------
     -- decode z80 (headersave) files
-    -- to bring them on the right memory address
+    -- to bring them to the right memory address
     --
     headersave_decode_inst : entity support.headersave_decode
     port map

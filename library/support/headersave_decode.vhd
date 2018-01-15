@@ -274,8 +274,10 @@ begin
 
 
             when START =>
-                v.autostart_en  := '1';
-                v.state         := IDLE;
+                if v.start_addr /= x"0000" then
+                    v.autostart_en      := '1';
+                end if;
+                v.state := IDLE;
 
         end case;
 
