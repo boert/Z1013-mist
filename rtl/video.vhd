@@ -24,126 +24,105 @@ USE ieee.numeric_std.ALL;
 use work.pkg_redz0mb1e.all;
 
 entity video is
-  generic(G_System : T_SYSTEM := DEV;
-          G_ReadOnly :boolean := FALSE); --fixes Bild aus initialisierten videoram
-  port(
-    clk   : in std_logic;
-    rst_i : in std_logic;
-    --cpu port to video memory
-    cs_ni     : in  std_logic;
-    we_ni     : in  std_logic;
-    data_i    : in  std_logic_vector(7 downto 0);
-    data_o    : out std_logic_vector(7 downto 0);
-    addr_i    : in  std_logic_vector(9 downto 0);
-    --vga output
-    video_clk : in  std_logic;
-    red_o     : out std_logic;
-    blue_o    : out std_logic;
-    green_o   : out std_logic;
-    vsync_o   : out std_logic;
-    hsync_o   : out std_logic;
-    --
-    col_fg    : in  T_COLOR;
-    col_bg    : in  T_COLOR);
+    generic
+    (
+        G_ReadOnly  : boolean := FALSE -- fixes Bild aus initialisierten videoram
+    );
+    port
+    (
+        clk         : in std_logic;
+        rst_i       : in std_logic;
+        -- cpu port to video memory
+        cs_ni       : in  std_logic;
+        we_ni       : in  std_logic;
+        data_i      : in  std_logic_vector(7 downto 0);
+        data_o      : out std_logic_vector(7 downto 0);
+        addr_i      : in  std_logic_vector(9 downto 0);
+        romsel_i    : in  std_logic;  
+        -- vga output
+        video_clk   : in  std_logic;
+        red_o       : out std_logic;
+        blue_o      : out std_logic;
+        green_o     : out std_logic;
+        vsync_o     : out std_logic;
+        hsync_o     : out std_logic;
+        --
+        col_fg      : in  T_COLOR;
+        col_bg      : in  T_COLOR
+    );
 end entity video;
 
 architecture behave of video is
 
-  component char_rom
-    generic (
-      G_System : T_SYSTEM);
-    port (
-      clk         : in  std_logic;
-      cs_ni       : in  std_logic;
-      data_o      : out std_logic_vector(7 downto 0);
-      addr_char_i : in  std_logic_vector(7 downto 0);
-      addr_line_i : in  std_logic_vector(2 downto 0));
-  end component;
-
-     component video_ram
-     generic (
-       G_System   : T_SYSTEM;
-       G_READONLY : boolean);
-     port (
-       cpu_clk      : in  std_logic;
-       cpu_cs_ni    : in  std_logic;
-       cpu_we_ni    : in  std_logic;
-       cpu_addr_i   : in  std_logic_vector(9 downto 0);
-       cpu_data_o   : out std_logic_vector(7 downto 0);
-       cpu_data_i   : in  std_logic_vector(7 downto 0);
-       video_clk    : in  std_logic;
-       video_cs_ni  : in  std_logic;
-       video_addr_i : in  std_logic_vector(9 downto 0);
-       video_data_o : out std_logic_vector(7 downto 0));
-   end component;
-
-   --readonly port to video, --(address bus character rom)
-  signal vram_video_addr : std_logic_vector(9 downto 0):= (others => '0');
-  signal data4crom       : std_logic_vector(7 downto 0);
-  --adress pointer to character rom
-  --     charcter code feeded from videoram                                                                   
-  signal crom_index_high : unsigned(7 downto 0):= (others => '0'); 
-  signal blank_area      : std_logic;
-  
-  constant C_CHAR_WIDTH  : integer := 8;
-  constant C_CHAR_HEIGHT : integer := 8;
-
-  constant C_CHAR_PER_LINE : integer := 32;
-  constant C_CHAR_PER_COL  : integer := 32;
-
-  --video 800 x 600
-  --from svga signal generator 
-  signal hcount_slv : std_logic_vector(10 downto 0);
-  signal vcount_slv : std_logic_vector(10 downto 0);
-  signal hcount : unsigned(10 downto 0);
-  signal vcount : unsigned(10 downto 0);
+    -- readonly port to video, --(address bus character rom)
+    signal vram_video_addr : std_logic_vector(9 downto 0):= (others => '0');
+    signal data4crom       : std_logic_vector(7 downto 0);
+    signal data4crom1      : std_logic_vector(7 downto 0);
+    signal data4crom2      : std_logic_vector(7 downto 0);
+    -- adress pointer to character rom
+    --     charcter code feeded from videoram                                                                   
+    signal crom_index_high : unsigned(7 downto 0):= (others => '0'); 
+    signal blank_area      : std_logic;
     
-  --character 
-  signal CE_half : boolean := false; --true every 2nd videoclock, used for
-                                     --horizontal streching
-  signal row_odd : boolean := false; --true every 2nd row, used for vertival stretching
-  signal col_fg_q, col_bg_q :T_COLOR;
-  --colors (not used yet)
-
-  CONSTANT C_COLOR_BG :T_COLOR := "001";   --blue
-  CONSTANT C_COLOR_FG :T_COLOR := "110";   --yellow
-
-  signal pixel_col_q : std_logic_vector(2 downto 0);
-  signal pixel_bw    : std_logic;
-
-  --a line of 8 pixels in a character
-  signal char_line_q                             : std_logic_vector(7 downto 0):= (others => '0');
+    -- video 800 x 600
+    -- from svga signal generator 
+    signal hcount_slv         : std_logic_vector(10 downto 0);
+    signal vcount_slv         : std_logic_vector(10 downto 0);
+    signal hcount             : unsigned(10 downto 0);
+    signal vcount             : unsigned(10 downto 0);
+    
+    -- character 
+    signal CE_half            : boolean := false; --true every 2nd videoclock, used for
+                                                  --horizontal streching
+    signal row_odd            : boolean := false; --true every 2nd row, used for vertival stretching
+    signal col_fg_q, col_bg_q :T_COLOR;
   
-  --counting character hor. and vertical
+    signal pixel_col_q        : std_logic_vector(2 downto 0);
+    signal pixel_bw           : std_logic;
 
-  --row within character --(8), incrementat every line
-  signal rowInChar_cnt_q, colInChar_cnt_q        : integer range 0 to 7 := 0;
-  --count all characters in a row
-  signal CharCol_cnt_q                           : unsigned(5 downto 0):= "100000"; --stopped
-  signal CharRow_cnt_q                           : unsigned(5 downto 0):= "100000"; --stopped
+    -- a line of 8 pixels in a character
+    signal char_line_q        : std_logic_vector(7 downto 0):= (others => '0');
+  
+    -- counting character hor. and vertical
+ 
+    -- row within character --(8), incrementat every line
+    signal rowInChar_cnt_q    : integer range 0 to 7 := 0;
+    signal colInChar_cnt_q    : integer range 0 to 7 := 0;
+    -- count all characters in a row
+    signal CharCol_cnt_q      : unsigned(5 downto 0):= "100000"; --stopped
+    signal CharRow_cnt_q      : unsigned(5 downto 0):= "100000"; --stopped
+ 
+    signal next_char_right    : boolean;
+    signal vram_video_data    : std_logic_vector(7 downto 0);
+    signal addr_line_slv      : std_logic_vector(2 downto 0);
+    signal char_area_n        : std_logic;
 
-  signal next_char_right : boolean;
-  signal vram_video_data : std_logic_vector(7 downto 0);
-  signal addr_line_slv   : std_logic_vector(2 downto 0);
-  signal char_area_n     : std_logic;
 begin
 
-  char_rom_1: char_rom
-     generic map (
-       G_SYSTEM => DEV)
-     port map (
-       clk         => video_clk,
-       cs_ni       => --char_area_n,
-                      '0',
-       data_o      => data4crom,
-       addr_char_i => std_logic_vector(crom_index_high),
-       addr_line_i => addr_line_slv);
+    char_rom_1: entity work.char_rom
+    port map (
+        clk         => video_clk,
+        data_o      => data4crom1,
+        addr_char_i => std_logic_vector(crom_index_high),
+        addr_line_i => addr_line_slv
+    );
 
-   addr_line_slv <= std_logic_vector(to_unsigned(rowInChar_cnt_q,3));
+    -- second character ROM
+    char_rom_2: entity work.charrom2
+    port map (
+        clk         => video_clk,
+        data_o      => data4crom2,
+        addr_char_i => std_logic_vector(crom_index_high),
+        addr_line_i => addr_line_slv
+    );
 
-   video_ram_1: video_ram
+    addr_line_slv <= std_logic_vector( to_unsigned( rowInChar_cnt_q, 3));
+
+    -- select character ROM
+    data4crom <= data4crom2 when romsel_i = '1' else data4crom1;
+
+    video_ram_1: entity work.video_ram
      generic map (
-       G_System   => DEV,
        G_READONLY => G_READONLY)
      port map (
        cpu_clk      => clk,
@@ -153,7 +132,6 @@ begin
        cpu_data_o   => data_o,
        cpu_data_i   => data_i,
        video_clk    => video_clk,
-       video_cs_ni  => char_area_n,
        video_addr_i => vram_video_addr,
        video_data_o => vram_video_data);
    

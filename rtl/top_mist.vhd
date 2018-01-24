@@ -112,7 +112,7 @@ architecture rtl of top_mist is
     --   max. 7 chars per entry
     --
     constant config_str   : string(1 to 170) := 
-        "Z1013.01;" &   -- soc name
+        "Z1013.64;" &   -- soc name
         "Z80;" &        -- extension for image files, attn: upper case
         "O2,Scanlines,On,Off;" & 
         "O3,Keyboard,en,de;" & 

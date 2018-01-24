@@ -14,6 +14,7 @@ work    rtl/video.vhd
 work    rtl/video_ram_pkg.vhd
 work    rtl/video_ram.vhd
 work    rtl/charrom.vhd
+work    rtl/charrom2.vhd
 work    rtl/bm100_pkg.vhd
 work    rtl/ROM.vhd
 work    rtl/bm204_202_pkg.vhd

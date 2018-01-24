@@ -42,8 +42,11 @@ Z1013.01:
 - 2 kByte ROM (F000h - F7FFh), Riesa monitor 2.02
 - keyboard mapping from PS/2 scancodes to 8x4 matrix
 - joystick on user port (PIO A)
+- sound output PIO B7 or user port (PIO A)
+
+Z1013.64:
 - frequency switching 2 MHz/ 4 MHz, port 04h, bit 6
-- sound output PIO B7 or user port (PIO)
+- switchable character ROM, port 04h, bit 5
 
 MiST additions:
 - load z80 files (headersave format) from SD-card
@@ -52,6 +55,7 @@ MiST additions:
 - scanline support
 - online help for most monitor commands
 - switchable color scheme
+- switchable keyboard layout (en/de)
 - right push button on mist for reset
 
 ![Z1013 with OSD (center), online help (right) and status line (top)](https://raw.githubusercontent.com/boert/Z1013-mist/master/documentation/Screenshot_Z1013_on_MiST.jpg)

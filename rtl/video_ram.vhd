@@ -38,7 +38,6 @@ use work.video_ram_pkg.all;             --video ram (types, powerup scr
 entity video_ram is
   generic
     (
-      G_System   : T_SYSTEM := DEV;
       G_READONLY : boolean  := false  --true:fixes Bild aus initialisierten videoram);
       );
   port
@@ -51,7 +50,6 @@ entity video_ram is
       cpu_data_i   : in  std_logic_vector(7 downto 0);
       --
       video_clk    : in  std_logic;      --videoclk (i.e. 40MHz for 800x600@60)
-      video_cs_ni  : in  std_logic;
       video_addr_i : in  std_logic_vector(9 downto 0);
       video_data_o : out std_logic_vector(7 downto 0)
       );
@@ -81,34 +79,26 @@ architecture rtl of video_ram is
   signal addr_a : natural range 0 to 2**10-1;
   signal addr_b : natural range 0 to 2**10-1;
 
-  signal data_b : std_logic_vector(7 downto 0) := (others => '0');
-  signal we_b   : std_logic                    := '0';
-
 begin
 
   addr_a <= to_integer(unsigned(cpu_addr_i));
   addr_b <= to_integer(unsigned(video_addr_i));
 
   -- Port A
-  process(cpu_clk)
+  process
   begin
-    if falling_edge(cpu_clk) then
+    wait until rising_edge( cpu_clk);
       if cpu_cs_ni = '0' and cpu_we_ni = '0' and G_READONLY = false then
         ram(addr_a) := cpu_data_i;
       end if;
       cpu_data_o <= ram(addr_a);
-    end if;
   end process;
 
   -- Port B
-  process(video_clk)
+  process
   begin
-    if(rising_edge(video_clk)) then
-      if we_b = '1' then
-        ram(addr_b) := data_b;
-      end if;
-      video_data_o <= ram(addr_b);
-    end if;
+    wait until rising_edge(video_clk);
+    video_data_o <= ram(addr_b);
   end process;
 
 end architecture rtl;
