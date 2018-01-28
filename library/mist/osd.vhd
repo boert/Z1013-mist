@@ -2,7 +2,7 @@
 -- A simple OSD implementation. Can be hooked up between a cores
 -- VGA output and the physical VGA pins
 --
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017,2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 --
 -- This source file is free software: you can redistribute it and/or modify
@@ -77,14 +77,14 @@ architecture rtl of osd is
 
     --
     -- horizontal counter
-    signal  h_cnt           : unsigned( 9 downto 0) := ( others => '0');
+    signal  h_cnt           : unsigned( 10 downto 0) := ( others => '0');
     signal  hsD             : std_logic;
     signal  hsD2            : std_logic;
-    signal  hs_low          : unsigned( 9 downto 0) := ( others => '0');
-    signal  hs_high         : unsigned( 9 downto 0) := ( others => '0');
+    signal  hs_low          : unsigned( 10 downto 0) := ( others => '0');
+    signal  hs_high         : unsigned( 10 downto 0) := ( others => '0');
     signal  hs_pol          : std_logic;
-    signal  h_dsp_width     : unsigned( 9 downto 0);
-    signal  h_dsp_ctr       : unsigned( 9 downto 0);
+    signal  h_dsp_width     : unsigned( 10 downto 0);
+    signal  h_dsp_ctr       : unsigned( 10 downto 0);
     --
     -- vertical counter
     signal  v_cnt           : unsigned( 9 downto 0) := ( others => '0');
@@ -97,8 +97,8 @@ architecture rtl of osd is
     signal  v_dsp_ctr       : unsigned( 9 downto 0);
     --                      
     -- OSD area             
-    signal  h_osd_start     : unsigned( 9 downto 0);
-    signal  h_osd_end       : unsigned( 9 downto 0);
+    signal  h_osd_start     : unsigned( 10 downto 0);
+    signal  h_osd_end       : unsigned( 10 downto 0);
     signal  v_osd_start     : unsigned( 9 downto 0);
     signal  v_osd_end       : unsigned( 9 downto 0);
     --
@@ -111,7 +111,8 @@ architecture rtl of osd is
     signal  osd_byte        : std_logic_vector( 7 downto 0);
     signal  osd_pixel       : std_logic;
     signal  osd_color_reg   : unsigned( 2 downto 0);
-
+    
+    signal  stretch         : boolean := false;
 
 begin
 
@@ -164,7 +165,7 @@ begin
 
     hs_pol      <= '1'    when hs_high < hs_low else '0';
     h_dsp_width <= hs_low when hs_pol = '1'     else hs_high;
-    h_dsp_ctr   <= '0' & h_dsp_width( 9 downto 1);
+    h_dsp_ctr   <= '0' & h_dsp_width( 10 downto 1);
 
     process
     begin
@@ -241,7 +242,8 @@ begin
     osd_vcnt    <= resize( v_cnt - v_osd_start, 7);
     osd_pixel   <= osd_byte( to_integer( osd_vcnt( 3 downto 1)));
 
-    osd_byte    <= osd_buffer( to_integer( osd_vcnt( 6 downto 4) & osd_hcnt)) when rising_edge( pclk);
+    osd_byte    <= osd_buffer( to_integer( osd_vcnt( 6 downto 4) & osd_hcnt)) when rising_edge( pclk) and stretch;
+    stretch     <= not stretch when rising_edge( pclk);
 
     osd_color_reg   <= to_unsigned( OSD_COLOR, osd_color_reg'length);
 

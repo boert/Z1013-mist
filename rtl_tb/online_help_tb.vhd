@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- testbench for online help (Z1013 mist project)
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -32,7 +32,7 @@ end entity online_help_tb;
 
 architecture testbench of online_help_tb is
 
-    constant pixel_clock_period : time := 1 sec / 40000000;
+    constant pixel_clock_period  : time := 1 sec / 60_000_000;
 
     signal simulation_run        : boolean := true;
 

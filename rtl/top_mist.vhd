@@ -153,8 +153,8 @@ architecture rtl of top_mist is
     signal scancode_en            : std_logic;
     signal scancode               : std_logic_vector(7 downto 0);
     --                            
-    signal clk_32Mhz              : std_logic;
-    signal video_clk              : std_logic;
+    signal video_clk60            : std_logic;
+    signal video_clk40            : std_logic;
     signal cpu_clk                : std_logic;
     signal cpu_clk_fast           : std_logic;
     signal cpu_clk_slow           : std_logic;
@@ -257,8 +257,8 @@ begin
     (
         inclk0   => sys_clk,      -- 27 MHz
         locked   => pll_locked,
-        c0       => clk_32Mhz,    -- 32 MHz, -2.5 ns (was: 50MHz), sdram
-        c1       => video_clk,    -- 40 MHz, SVGA 800x600@60Hz
+        c0       => video_clk60,  -- 60 MHz, SVGA 800x600@60MHz, for 64x16 mode
+        c1       => video_clk40,  -- 40 MHz, SVGA 800x600@60Hz
         c2       => cpu_clk_fast, --  4 MHz
         c3       => cpu_clk_slow, --  2 MHz
         c4       => ram_clk       -- 32 MHz
@@ -348,7 +348,7 @@ begin
         --
         cpu_clk               => cpu_clk,                   -- : in std_logic;
         cpu_hold_n            => not( hs_decode_download),  -- : in std_logic;
-        video_clk             => video_clk,                 -- : in std_logic;
+        video_clk             => video_clk60,               -- : in std_logic;
         -- ascii from keyboard or serial line
         ascii                 => sys_ascii,                 -- : in std_logic_vector( 7 downto 0);
         ascii_press           => sys_press,                 -- : in std_logic;
@@ -622,7 +622,7 @@ begin
     port map
     (
         active      => not( user_io_status( scanline_bit)), -- : in  std_logic;
-        pixel_clock => video_clk,              -- : in  std_logic;
+        pixel_clock => video_clk60,            -- : in  std_logic;
         -- input signals
         red         => (others => sys_red),    -- : in  std_logic_vector( 5 downto 0);
         green       => (others => sys_green),  -- : in  std_logic_vector( 5 downto 0);
@@ -642,7 +642,7 @@ begin
     port map
     (
         active          => user_io_status( help_bit), -- : in  std_logic;
-        pixel_clock     => video_clk,              -- : in  std_logic;
+        pixel_clock     => video_clk60,            -- : in  std_logic;
         -- input signals
         red             => scanline_red_out,       -- : in  std_logic_vector( 5 downto 0);
         green           => scanline_green_out,     -- : in  std_logic_vector( 5 downto 0);
@@ -667,7 +667,7 @@ begin
     port map
     (
         -- OSDs pixel clock
-	    pclk           => video_clk,           -- : in  std_logic;
+	    pclk           => video_clk60,         -- : in  std_logic;
         -- SPI interface                       -- 
 		sck            => spi_sck,             -- : in  std_logic;
 		ss             => spi_ss3,             -- : in  std_logic;

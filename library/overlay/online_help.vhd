@@ -55,7 +55,7 @@ end entity online_help;
 
 
 architecture rtl of online_help is
-
+    
     constant overlay_startx : natural  := 810;
     constant overlay_starty : natural  := 140;
     --                                 
@@ -132,6 +132,7 @@ architecture rtl of online_help is
     signal linepos      : natural range 0 to text_width * text_heigth - 1;
     signal pixelpos     : natural range 0 to 4; 
     signal charpos      : natural range 0 to 7; 
+    signal stretch      : natural range 0 to 2;
     --
     signal message_en_1 : std_logic;
     signal write_pos    : natural range 0 to message_length - 1;
@@ -150,6 +151,11 @@ begin
         blue_out    <= blue;
 
         hposition <= hposition + 1;
+        if stretch > 0 then
+            stretch <= stretch - 1;
+        else
+            stretch <= 2;
+        end if;
         -- new frame
         if vsync_1 = '1' and vsync = '0' then
             vposition <= ( others => '0');
@@ -164,8 +170,10 @@ begin
             if hsync_1 = '1' and hsync = '0' then
                 vposition <= vposition + 1;
                 hposition <= ( others => '0');
-            end if;
+                stretch   <= 2;
+            end if; -- new line
 
+            -- online help
             if show_text = '1' then
                 overlay_bit := char_rom( char_width * charpos + pixelpos + char_width * char_height * ( character'pos( text_rom( text_pos)) - 32));
                 -- in range
@@ -183,7 +191,7 @@ begin
                             end if;
                             charpos <= 0;
                         end if;
-                    end if;
+                    end if; -- check hsync
                     
                     if hposition >= overlay_startx and hposition < overlay_startx + text_width * char_width then
                         if overlay_bit = '1' then
@@ -194,18 +202,21 @@ begin
                             red_out     <= "00" & red(   red'high-2   downto 0);
                             green_out   <= "00" & green( green'high-2 downto 0);
                             blue_out    <= "00" & blue(  blue'high-2  downto 0);
+                        end if; -- overlay bit
+                        if stretch = 0 then
+                            if pixelpos < 4 then
+                                pixelpos  <= pixelpos + 1;
+                            else
+                                pixelpos  <= 0;
+                                text_pos  <= text_pos + 1;
+                            end if;
                         end if;
-                        if pixelpos < 4 then
-                            pixelpos  <= pixelpos + 1;
-                        else
-                            pixelpos  <= 0;
-                            text_pos  <= text_pos + 1;
-                        end if;
-                    end if;
-                end if;
+                    end if; -- hposition
+                end if; -- vposition
 
-            end if;
+            end if; -- show_text
 
+            -- loading message
             if show_message = '1' then
                 overlay_bit := char_rom( char_width * charpos + pixelpos + char_width * char_height * ( character'pos( message_ram( message_pos)) - 32));
                 -- in range
@@ -231,18 +242,20 @@ begin
                             green_out   <= "00" & green( green'high-2 downto 0);
                             blue_out    <= "00" & blue(  blue'high-2  downto 0);
                         end if;
-                        if pixelpos < 4 then
-                            pixelpos  <= pixelpos + 1;
-                        else
-                            pixelpos    <= 0;
-                            if message_pos < message_length - 1 then
-                                message_pos <= message_pos + 1;
+                        if stretch = 0 then
+                            if pixelpos < 4 then
+                                pixelpos  <= pixelpos + 1;
+                            else
+                                pixelpos  <= 0;
+                                if message_pos < message_length - 1 then
+                                    message_pos <= message_pos + 1;
+                                end if;
                             end if;
                         end if;
-                    end if;
-                end if;
+                    end if; -- hposition
+                end if; -- vposition
 
-            end if;
+            end if; -- show_message
         
             -- update message
             if message_en = '1' and message_en_1 = '0' then
@@ -259,7 +272,7 @@ begin
         hsync_1         <= hsync;
         message_en_1    <= message_en;
 
-        -- don't modify sync signals
+        -- don't change sync signals
         hsync_out   <= hsync;
         vsync_out   <= vsync;
 

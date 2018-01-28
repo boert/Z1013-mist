@@ -33,12 +33,12 @@ overlay library/overlay/scanline.vhd
 overlay library/overlay/online_help.vhd
 overlay library/overlay/chars.vhd
 overlay library/overlay/text.vhd
+work 	library/vga/vga_controller_800_600.vhd
 T80     contrib/T80/T80_ALU.vhd
 T80     contrib/T80/T80_MCode.vhd
 T80     contrib/T80/T80_Pack.vhd
 T80     contrib/T80/T80_Reg.vhd
 T80     contrib/T80/T80s.vhd
 T80     contrib/T80/T80.vhd
-work 	contrib/vga/vga_controller_800_600.vhd
 # megawizard stuff
 work    cores/altpll0.vhd

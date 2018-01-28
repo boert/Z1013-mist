@@ -47,6 +47,8 @@
 -- Z1013 with ask every 2500 clock ticks for a new column
 -- complete matrix readout should take ca. 20000 ticks (5 ms @ 4 MHz) 
 ----------------------------------------------------------------------------------
+-- TODO check codes for BASIC handbook, p.21
+-- http://www.sax.de/~zander/z1013/dok/z13_bhb.pdf
 
 library ieee;
 use ieee.std_logic_1164.all;

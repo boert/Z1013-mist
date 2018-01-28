@@ -277,8 +277,9 @@ begin
         data_o          => data4video,      
         addr_i          => addr(9 downto 0),
         romsel_i        => extension_reg( ext_2nd_zgen),
+        mode64x16_i     => extension_reg( ext_video_32_64),
         --
-        video_clk       => video_clk,
+        video_clk       => video_clk,                 -- : in std_logic;
         red_o           => red_o,
         blue_o          => blue_o,
         green_o         => green_o,
