@@ -27,7 +27,8 @@ Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the 
 When the Z1013 is running, you can load .z80-files via the OSD direct into the memory.
 Name, type, load address, end address and start address of the loaded file is show on top of screen.
 When Autostart is enabled (default) then the program will be started automaticly.
-Otherwise ```J <start address>```  will also jump to the start address.
+This works only from monitor (the operating system), because some keypresses need to be emulated.
+Otherwise ```J <start address>```  will also jump to the start program.
 The original keyboard layout is a littlebit strange, so expect unusal keys to control the games,
 e.g. <U> for moving up und <space> for moving down.
 
@@ -44,9 +45,10 @@ Z1013.01:
 - joystick on user port (PIO A)
 - sound output PIO B7 or user port (PIO A)
 
-Z1013.64:
+Z1013.64 (with "Peters-Extension"):
+- 64x16 character video output, port 04h, bit 7
 - frequency switching 2 MHz/ 4 MHz, port 04h, bit 6
-- switchable character ROM, port 04h, bit 5
+- 2nd character ROM (umlauts, control chars & inverse), port 04h, bit 5
 
 MiST additions:
 - load z80 files (headersave format) from SD-card

@@ -36,7 +36,7 @@ architecture testbench of online_help_tb is
 
     signal simulation_run        : boolean := true;
 
-    signal tb_active             : std_logic := '0';
+    signal tb_active             : std_logic := '1';
     signal tb_pixel_clock        : std_logic := '0';
     --
     signal tb_red                : std_logic_vector( 5 downto 0);

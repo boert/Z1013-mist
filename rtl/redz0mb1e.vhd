@@ -337,7 +337,7 @@ begin
     begin
         wait until rising_edge( cpu_clk);
         if wr_n = '0' and sel_io_1_n = '0' then
-            extension_reg   <= data4cpu;
+            extension_reg(7 downto 5)	<= data4cpu( 7 downto 5);
         end if;
         if reset_n = '0' then
             extension_reg   <= ( others => '0');

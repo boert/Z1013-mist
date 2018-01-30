@@ -69,7 +69,7 @@ architecture behave of video is
     end function;
 
     -- constants for screen position
-    constant HSTART32   : natural   := xFACTOR( 144);
+    constant HSTART32   : natural   := xFACTOR( 120);
     constant HSTART64   : natural   := 72;
     constant HRESET     : natural   := xFACTOR( 820);
     constant VSTART     : natural   := 44;

@@ -32,6 +32,9 @@ use mist.mist_components.data_io;
 library support;
 library overlay;
 
+library work;
+use work.init_message_pkg.all;
+
 
 entity top_mist is
     port (
@@ -111,7 +114,7 @@ architecture rtl of top_mist is
     --   forbidden symbols: / 
     --   max. 7 chars per entry
     --
-    constant config_str   : string(1 to 170) := 
+    constant config_str   : string := 
         "Z1013.64;" &   -- soc name
         "Z80;" &        -- extension for image files, attn: upper case
         "O2,Scanlines,On,Off;" & 
@@ -120,9 +123,13 @@ architecture rtl of top_mist is
         "O5,Color scheme,bk/wt,bl/yl;" & 
         "O6,Joystick mode,prac.88,ju+te87;" & 
         "O7,Autostart,Enable,Disable;" &
-        "T1,Reset";
+        "T1,Reset;" &
+		"V0," & version;
         -- O = option
         -- T = toggle
+		-- F = file
+		-- S = SD-image
+		-- V = version number
 
     -- named bit numbers
     constant uc_reset_bit   : natural := 0;
@@ -639,6 +646,10 @@ begin
 
 
     online_help_inst : entity overlay.online_help
+	generic map
+	(
+		init_message	=> init_message
+	)
     port map
     (
         active          => user_io_status( help_bit), -- : in  std_logic;
