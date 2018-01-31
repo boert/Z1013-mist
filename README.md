@@ -51,6 +51,7 @@ Z1013.64 (with "Peters-Extension"):
 - 2nd character ROM (umlauts, control chars & inverse), port 04h, bit 5
 
 MiST additions:
+- map video output to 800x600@60MHz (SVGA)
 - load z80 files (headersave format) from SD-card
 - display file information on status line
 - autostart z80-files
