@@ -29,6 +29,10 @@ use work.chars.all;
 use work.text.all;
 
 entity online_help is
+    generic
+    (
+        init_message    : string := "Z1013.01"
+    );
     port
     (
         active          : in  std_logic;
@@ -118,9 +122,20 @@ architecture rtl of online_help is
     end init_text_rom;
 
 
+    impure function init_message_ram( init_message : string)
+        return message_ram_t is
+        variable tmp        : message_ram_t := (others => ' ');
+    begin
+        for c in init_message'range loop
+            tmp( c - 1) := init_message( c);
+        end loop;
+        return tmp;
+    end init_message_ram;
+
+
     signal char_rom     : char_rom_t     := init_char_rom; 
     signal text_rom     : text_rom_t     := init_text_rom; 
-    signal message_ram  : message_ram_t  := ( others => ' ');
+    signal message_ram  : message_ram_t  := init_message_ram( init_message);
                         
     signal show_text    : std_logic;
     signal vsync_1      : std_logic;

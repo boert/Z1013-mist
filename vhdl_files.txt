@@ -6,6 +6,7 @@ work    rtl_tb/scancode_tb.vhd
 work    rtl_tb/keyboard_matrix_tb.vhd
 work    rtl_tb/auto_start_tb.vhd
 # design files
+work    rtl/init_message_pkg.vhd
 work    rtl/top_mist.vhd
 work    rtl/redz0mb1e_pkg.vhd
 work    rtl/redz0mb1e.vhd

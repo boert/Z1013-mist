@@ -36,7 +36,14 @@ export SYN_LOGFILE := $(LOGFILE)
 
 
 all: 
-	time --portability $(MAKE) vhdl_files.tcl map fit asm catch     2>&1 | tee $(SYN_LOGFILE)
+	time --portability $(MAKE) timestamp vhdl_files.tcl map fit asm  catch     2>&1 | tee $(SYN_LOGFILE)
+
+timestamp:
+	##############################
+	#
+	# time stamp
+	#
+	test ! -f ../rtl/Makefile || make --directory ../rtl
 
 
 vhdl_files.tcl: ../vhdl_files.txt
@@ -45,6 +52,8 @@ vhdl_files.tcl: ../vhdl_files.txt
 	# generate VHDL file list
 	#
 	grep --invert rtl_tb ../vhdl_files.txt | grep --invert "\#" | grep --invert "^$$" | awk '{printf "set_global_assignment -name VHDL_FILE ../%s  -library %s\n",$$2,$$1}' > vhdl_files.tcl
+
+
 
 
 map:

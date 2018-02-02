@@ -32,6 +32,9 @@ use mist.mist_components.data_io;
 library support;
 library overlay;
 
+library work;
+use work.init_message_pkg.all;
+
 
 entity top_mist is
     port (
@@ -111,26 +114,30 @@ architecture rtl of top_mist is
     --   forbidden symbols: / 
     --   max. 7 chars per entry
     --
-    constant config_str   : string(1 to 170) := 
-        "Z1013.01;" &   -- soc name
-        "Z80;" &        -- extension for image files, attn: upper case
-        "O2,Scanlines,On,Off;" & 
-        "O3,Keyboard,en,de;" & 
-        "O4,Online help,Off,On;" &
-        "O5,Color scheme,bk/wt,bl/yl;" & 
+    constant config_str   : string := 
+        core_name & ";" &   -- soc name
+        "Z80;" &            -- extension for image files, attn: upper case
+        "O23,Decoration,Scanline+mono,Mono,Scanline+color,Color;" & 
+        --"O5,Color scheme,bk/wt,bl/yl;" & 
+        "O4,Keyboard,en,de;" & 
+        "O5,Online help,Off,On;" &
         "O6,Joystick mode,prac.88,ju+te87;" & 
         "O7,Autostart,Enable,Disable;" &
-        "T1,Reset";
+        "T1,Reset;" &
+		"V0," & version & ", " & compile_time;
         -- O = option
         -- T = toggle
+		-- F = file
+		-- S = SD-image
+		-- V = version number
 
     -- named bit numbers
     constant uc_reset_bit   : natural := 0;
     constant reset_bit      : natural := 1;
     constant scanline_bit   : natural := 2;
-    constant keyboard_bit   : natural := 3;
-    constant help_bit       : natural := 4;
-    constant color_bit      : natural := 5;
+    constant color_bit      : natural := 3;
+    constant keyboard_bit   : natural := 4;
+    constant help_bit       : natural := 5;
     constant joystick_bit   : natural := 6;
     constant autostart_bit  : natural := 7;
 
@@ -639,6 +646,10 @@ begin
 
 
     online_help_inst : entity overlay.online_help
+	generic map
+	(
+		init_message	=> init_message
+	)
     port map
     (
         active          => user_io_status( help_bit), -- : in  std_logic;

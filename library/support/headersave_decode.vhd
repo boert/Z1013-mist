@@ -126,11 +126,11 @@ architecture rtl of headersave_decode is
         addr_out        => ( others => '-'),
         data_out        => ( others => '-'),
         --
-        show_message    => '0',
+        show_message    => '1',
         message_en      => '0',
         message         => ' ',
         message_restart => '0',
-        display_counter => 0,
+        display_counter => display_counter_max,
         --
         autostart_en    => '0'
     );
