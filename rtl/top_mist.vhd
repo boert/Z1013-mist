@@ -116,13 +116,12 @@ architecture rtl of top_mist is
     --
     constant config_str   : string := 
         core_name & ";" &   -- soc name
-        "Z80;" &            -- extension for image files, attn: upper case
+        "Z80;" &            -- extension for image files, attn: here in upper case
         "O23,Decoration,Scanline+mono,Mono,Scanline+color,Color;" & 
-        --"O5,Color scheme,bk/wt,bl/yl;" & 
         "O4,Keyboard,en,de;" & 
-        "O5,Online help,Off,On;" &
-        "O6,Joystick mode,prac.88,ju+te87;" & 
-        "O7,Autostart,Enable,Disable;" &
+        "OA,Online help,Off,On;" &
+        "O67,Joystick,practic 1/88,ju+te 6/87,practic 4/87,ERF-Soft;" & -- 00,10,01,11
+        "OB,Autostart,Enable,Disable;" &
         "T1,Reset;" &
 		"V0," & version & ", " & compile_time;
         -- O = option
@@ -137,17 +136,10 @@ architecture rtl of top_mist is
     constant scanline_bit   : natural := 2;
     constant color_bit      : natural := 3;
     constant keyboard_bit   : natural := 4;
-    constant help_bit       : natural := 5;
     constant joystick_bit   : natural := 6;
-    constant autostart_bit  : natural := 7;
-
-    -- named joystick directions
-    constant joy_right      : natural := 0;
-    constant joy_left       : natural := 1;
-    constant joy_down       : natural := 2;
-    constant joy_up         : natural := 3;
-    constant joy_fire_a     : natural := 4;
-    constant joy_fire_b     : natural := 5;
+    constant joystick2_bit  : natural := 7;
+    constant help_bit       : natural := 10;
+    constant autostart_bit  : natural := 11;
 
     
     ------------------------------------------------------------
@@ -189,11 +181,13 @@ architecture rtl of top_mist is
     signal sdram_oe               : std_logic;
     signal sdram_wr               : std_logic;
     --
-    signal user_io_status         : std_logic_vector(7 downto 0);
+    signal user_io_status         : std_logic_vector(31 downto 0);
     -- user port (X4) signals
     signal redz0mb1e_1_x4_in      : std_logic_vector(7 downto 0);
     signal redz0mb1e_1_x4_out     : std_logic_vector(7 downto 0);
     --
+    signal joystick_mode          : std_logic_vector( 1 downto 0);
+    signal userport_sound         : std_logic;
     signal sound_out              : std_logic;
     -- extension signals
     signal clk_2MHz_4MHz          : std_logic;
@@ -443,63 +437,30 @@ begin
    
 
     ------------------------------------
-    -- connect joystick and sound to
-    -- user port X4   
+    -- connect joystick to user port X4
     --
-    process( user_io_status, joystick_0, joystick_1, redz0mb1e_1_x4_out, sound_out)
-    begin
+    joystick_mode   <= user_io_status( joystick2_bit) & user_io_status( joystick_bit);
 
-        if user_io_status( joystick_bit) = '0' then
-            -- practic 1/88
-            redz0mb1e_1_x4_in( 0) <= '1';
-            redz0mb1e_1_x4_in( 1) <= '1';
-            redz0mb1e_1_x4_in( 2) <= '1';
-            redz0mb1e_1_x4_in( 3) <= '1';
-            redz0mb1e_1_x4_in( 4) <= '1';
-            -- joystick 0 (left jack)
-            if redz0mb1e_1_x4_out( 5) = '0' then
-                redz0mb1e_1_x4_in( 0) <= not joystick_0( joy_left);
-                redz0mb1e_1_x4_in( 1) <= not joystick_0( joy_right);
-                redz0mb1e_1_x4_in( 2) <= not joystick_0( joy_down);
-                redz0mb1e_1_x4_in( 3) <= not joystick_0( joy_up);
-                redz0mb1e_1_x4_in( 4) <= not ( joystick_0( joy_fire_a) or joystick_0( joy_fire_b));
-            end if;
-            -- joystick 1 (right jack)
-            if redz0mb1e_1_x4_out( 6) = '0' then
-                redz0mb1e_1_x4_in( 0) <= not joystick_1( joy_left);
-                redz0mb1e_1_x4_in( 1) <= not joystick_1( joy_right);
-                redz0mb1e_1_x4_in( 2) <= not joystick_1( joy_down);
-                redz0mb1e_1_x4_in( 3) <= not joystick_1( joy_up);
-                redz0mb1e_1_x4_in( 4) <= not ( joystick_1( joy_fire_a) or joystick_1( joy_fire_b));
-            end if;
-            redz0mb1e_1_x4_in( 5) <= redz0mb1e_1_x4_out( 5);
-            redz0mb1e_1_x4_in( 6) <= redz0mb1e_1_x4_out( 6);
-            redz0mb1e_1_x4_in( 7) <= redz0mb1e_1_x4_out( 7);
+    joystick_emu_inst: entity work.joystick_emu
+    port map (
+        mode            => joystick_mode,       -- : in  std_logic_vector( 1 downto 0);
+        --
+        joystick_0      => joystick_0,          -- : in  std_logic_vector( 7 downto 0);
+        joystick_1      => joystick_1,          -- : in  std_logic_vector( 7 downto 0);
+        --
+        userport_out    => redz0mb1e_1_x4_out,  -- : in  std_logic_vector( 7 downto 0); -- from PIO
+        userport_in     => redz0mb1e_1_x4_in,   -- : out std_logic_vector( 7 downto 0); -- to   PIO
+        --
+        sound           => userport_sound       -- : out std_logic; 
+    );
 
-            audiol  <= redz0mb1e_1_x4_out( 7) or sound_out;
-            audior  <= redz0mb1e_1_x4_out( 7) or sound_out;
-            
-        else
-            -- ju+te 6/87 (left or right jack)
-            redz0mb1e_1_x4_in( 0) <= '1';
-            redz0mb1e_1_x4_in( 1) <= '0';
-            redz0mb1e_1_x4_in( 2) <= '0';
-            redz0mb1e_1_x4_in( 3) <= '0';
-            redz0mb1e_1_x4_in( 4) <= not( joystick_0( joy_down)  or joystick_1( joy_down));
-            redz0mb1e_1_x4_in( 5) <= not( joystick_0( joy_left)  or joystick_1( joy_left));
-            redz0mb1e_1_x4_in( 6) <= not( joystick_0( joy_right) or joystick_1( joy_right));
-            redz0mb1e_1_x4_in( 7) <= not( joystick_0( joy_up)    or joystick_1( joy_up));
-            -- 'press' all directions same time on fire
-            if joystick_0( joy_fire_a) or joystick_0( joy_fire_b) or
-               joystick_1( joy_fire_a) or joystick_1( joy_fire_b) then
-                redz0mb1e_1_x4_in( 7 downto 4) <= "0000";
-            end if;
 
-            audiol  <= redz0mb1e_1_x4_out( 0) or sound_out;
-            audior  <= redz0mb1e_1_x4_out( 0) or sound_out;
-            
-        end if;
-    end process;
+    ------------------------------------
+    -- audio output
+    -- from tape out and/or user port
+    --
+    audiol  <= sound_out or userport_sound;
+    audior  <= sound_out or userport_sound;
 
     
     ------------------------------------
@@ -519,7 +480,7 @@ begin
         spi_miso       => spi_do,
         spi_mosi       => spi_di,
         --
-		status         => user_io_status,      -- : out std_logic_vector( 7 downto 0);
+		status         => user_io_status,      -- : out std_logic_vector( 31 downto 0);
         --
         -- internal interfaces
         joystick_0     => joystick_0,          -- : out std_logic_vector( 7 downto 0);

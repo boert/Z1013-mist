@@ -477,7 +477,7 @@ data2cpu <= "00000000" when boot_state = '1'   else
     begin
         wait until rising_edge( cpu_clk);
         if wr_n = '0' and sel_io_1_n = '0' then
-            extension_reg   <= data4cpu;
+            extension_reg( ext_clk_2MHz_4MHz)   <= data4cpu( ext_clk_2MHz_4MHz);
         end if;
         if reset_n = '0' then
             extension_reg   <= ( others => '0');

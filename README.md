@@ -16,12 +16,11 @@ Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the 
 ### Overview of OSD options
 | feature           | values
 | ---               | ---
-| Load *.Z80        | load from SD card
-| Scanlines         | on/off
+| Load *.Z80        | load .z80 files (headersave) from SD card
+| Decoration        | Scanlines on/off and Mono/Color
 | Keyboard layout   | de/en
 | Online help       | on/off
-| Color scheme      | black&white or blue&yellow
-| Joystick mode     | practic 1/88 or ju+te 6/87
+| Joystick mode     | practic 1/88, ju+te 6/87, practic 4/87 or ERF-Soft
 | Autostart         | enable/disable
 
 When the Z1013 is running, you can load .z80-files via the OSD direct into the memory.

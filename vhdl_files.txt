@@ -5,6 +5,7 @@ work    rtl_tb/online_help_tb.vhd
 work    rtl_tb/scancode_tb.vhd
 work    rtl_tb/keyboard_matrix_tb.vhd
 work    rtl_tb/auto_start_tb.vhd
+work    rtl_tb/user_io_tb.vhd
 # design files
 work    rtl/init_message_pkg.vhd
 work    rtl/top_mist.vhd
@@ -20,6 +21,7 @@ work    rtl/ROM.vhd
 work    rtl/bm204_202_pkg.vhd
 work    rtl/PIO.vhd
 work    rtl/keyboard_matrix.vhd
+work    rtl/joystick_emu.vhd
 # librarys
 mist    library/mist/mist_components.vhd
 mist    library/mist/user_io.vhd
