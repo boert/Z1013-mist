@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- helper package for access to (mist) verilog modules (Z1013 mist project)
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -51,7 +51,7 @@ package mist_components is
     	buttons             : out std_logic_vector( 1 downto 0);
     	switches            : out std_logic_vector( 1 downto 0);
         --
-    	status              : out std_logic_vector( 7 downto 0);
+    	status              : out std_logic_vector( 31 downto 0);
         -- connection to sd card emulation
     	sd_lba              : in  std_logic_vector( 31 downto 0);
     	sd_rd               : in  std_logic;

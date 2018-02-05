@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- user_io (vhdl version) for the Z1013 mist project
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@
 -- 0x05 ps/2 keyboard
 -- 0x14 read config string
 -- 0x15 write status (core reset)
+-- 0x1e 32 bit status
 --
 --
 -- not simulated (=untestet) functions (not needed by my core...):
@@ -42,7 +43,6 @@
 -- 0x06 OSD keys
 -- 0x1c set sd status
 -- 0x1d sd info
--- 0x1e 32 bit status
 -- 0x1f keyboard LEDs
 
 library ieee;
@@ -71,7 +71,7 @@ entity user_io is
         buttons             : out std_logic_vector( 1 downto 0);
         switches            : out std_logic_vector( 1 downto 0);
         --
-        status              : out std_logic_vector( 7 downto 0);
+        status              : out std_logic_vector( 31 downto 0);
         -- connection to sd card emulation
         sd_lba              : in  std_logic_vector( 31 downto 0);
         sd_rd               : in  std_logic;
@@ -109,7 +109,7 @@ architecture rtl of user_io is
 
     type slv_vector_t is array( natural range <>) of std_logic_vector( 7 downto 0);
     
-    signal status_reg           : std_logic_vector( 7 downto 0);
+    signal status_reg           : std_logic_vector( 31 downto 0);
 
     signal sbuf                 : std_logic_vector( 6 downto 0);
     signal cmd                  : std_logic_vector( 7 downto 0);
@@ -459,7 +459,7 @@ begin
                             scancode_toggle <= not scancode_toggle;
 
                         when x"15" =>
-                            status_reg  <= sbuf & SPI_MOSI;
+                            status_reg( 7 downto 0) <= sbuf & SPI_MOSI;
 
 				        -- send sector IO -> FPGA
                         when x"17" =>
@@ -494,6 +494,16 @@ begin
                                     joystick_analog_1( 7 downto 0) <= sbuf & SPI_MOSI;
                                 end if;
                             end if;
+
+                        -- status, 32 bits 
+                        when x"1e" =>
+                            case to_integer( byte_cnt) is
+                                when 1 => status_reg(  7 downto  0) <= sbuf & SPI_MOSI; 
+                                when 2 => status_reg( 15 downto  8) <= sbuf & SPI_MOSI;
+                                when 3 => status_reg( 23 downto 16) <= sbuf & SPI_MOSI;
+                                when 4 => status_reg( 31 downto 24) <= sbuf & SPI_MOSI;
+                                when others => NULL;
+                            end case;
 
                         when others =>
                             NULL;
