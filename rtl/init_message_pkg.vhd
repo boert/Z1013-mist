@@ -1,6 +1,8 @@
 package init_message_pkg is
 
-    constant init_message : string := " Z1013.64  v2018.02, 2018-01-30 19:43";
+    constant core_name    : string := "Z1013.64";
     constant version      : string := "v2018.02";
+    constant compile_time : string := "2018-02-07 22:13";
+    constant init_message : string := " " & core_name & "  " & version & ", " & compile_time;
 
 end package init_message_pkg;

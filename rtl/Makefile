@@ -25,12 +25,14 @@ all: init_message_pkg.vhd
 
 init_message_pkg.vhd:
 	@rm -f $@
-	@echo "package init_message_pkg is"                                         		>> $@
-	@echo ""                                                                        	>> $@
-	@echo "    constant init_message : string := \" Z1013.64  $(VERSION), $(DATE)\";" 	>> $@
-	@echo "    constant version      : string := \"$(VERSION)\";"						>> $@
-	@echo ""                                                                        	>> $@
-	@echo "end package init_message_pkg;"                                           	>> $@
+	@echo "package init_message_pkg is"                                         								>> $@
+	@echo ""                                                                        							>> $@
+	@echo "    constant core_name    : string := \"Z1013.64\";"													>> $@
+	@echo "    constant version      : string := \"$(VERSION)\";"												>> $@
+	@echo "    constant compile_time : string := \"$(DATE)\";" 													>> $@
+	@echo "    constant init_message : string := \" \" & core_name & \"  \" & version & \", \" & compile_time;"	>> $@
+	@echo ""                                                                        							>> $@
+	@echo "end package init_message_pkg;"                                           							>> $@
 
 
 .PHONY: init_message_pkg.vhd

@@ -2,7 +2,7 @@
 # set the simulation target here
 #
 #
-# Copyright (c) 2017 by Bert Lange
+# Copyright (c) 2017, 2018 by Bert Lange
 # https://github.com/boert/Z1013-mist
 #
 # This source file is free software: you can redistribute it and/or modify
@@ -25,6 +25,7 @@ TARGET=top_mist_tb
 #TARGET=scancode_tb
 #TARGET=keyboard_matrix_tb
 #TARGET=auto_start_tb
+#TARGET=user_io_tb
 
 
 LIBS = $(shell grep --invert "\#" ../vhdl_files.txt | cut --field=1 --delimiter=" " | sort | uniq)

@@ -1,7 +1,7 @@
 ----------------------------------------------------------------------------------
 -- small 5x8 bitmap font (ASCII 32..127)
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
