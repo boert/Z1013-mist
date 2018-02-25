@@ -12,43 +12,50 @@
 -- FPGAkuechle
 -- this sources are declared to Open Source by the author
 
+-- Bert Lange:
+-- add /cs for low SRAM
+--
+
 library ieee;
 use ieee.std_logic_1164.all;
 USE ieee.numeric_std.ALL;
 use work.pkg_redz0mb1e.all;
 
 entity addr_decode is
-  port (
+port (
     addr_i   : in  std_logic_vector(15 downto 0);
     ioreq_ni : in  std_logic;
     mreq_ni  : in  std_logic;
     rfsh_ni  : in  std_logic;
-    cs_mem_o : out std_logic_vector(3 downto 0);--shall be low active
+    cs_mem_o : out std_logic_vector(4 downto 0);--shall be low active
     cs_io_no : out std_logic_vector(3 downto 0)  --low active
     );
-  end entity addr_decode;
+end entity addr_decode;
 
-  architecture behave of addr_decode is
-      signal upper_select : boolean;
-        signal mem_select : boolean;    --mem access (not refresh)
-        signal io_select  : boolean;
-        signal cs_mem_int : std_logic_vector(3 downto 0);
-        signal cs_io_int  : std_logic_vector(3 downto 0);
+architecture behave of addr_decode is
+
+    signal sram_select  : std_logic;
+    signal upper_select : boolean;
+    signal mem_select   : boolean;    --mem access (not refresh)
+    signal io_select    : boolean;
+    signal cs_mem_int   : std_logic_vector(4 downto 0);
+    signal cs_io_int    : std_logic_vector(3 downto 0);
   
   begin
+      sram_select  <= '1' when unsigned( addr_i) < 1024 and mreq_ni = '0' and rfsh_ni = '1' else '0'; -- lowest 1k
       upper_select <= addr_i(15 downto 13) = "111";  --lower is USER-RAM
       mem_select   <= mreq_ni = '0' and rfsh_ni = '1'; --skip refresh cycles
       io_select    <= ioreq_ni = '0';   
         with addr_i(12 downto 10) select  --1k pages
-        cs_mem_int <=   "1110" when "000", --xE00   DK10
-                        "1111" when "001",  --xE400  free 
-                        "1111" when "010",  --xE800  free 
-                        "1101" when "011",  --xEC00  VideoRAM
-                        "1011" when "100",  --xF000  Monitor-ROM
-                        "1011" when "101",  --xF400  Monitor-ROM  
-                        "1011" when "110",  --xF800  extra ROM
-                        "1011" when "111",  --xFC00  extra ROM
-                        "1111" when others;    
+        cs_mem_int <=   "11110" when "000", --xE00   DK10
+                        "11111" when "001",  --xE400  free 
+                        "11111" when "010",  --xE800  free 
+                        "11101" when "011",  --xEC00  VideoRAM
+                        "11011" when "100",  --xF000  Monitor-ROM
+                        "11011" when "101",  --xF400  Monitor-ROM  
+                        "11011" when "110",  --xF800  extra ROM
+                        "11011" when "111",  --xFC00  extra ROM
+                        "11111" when others;    
 
         with addr_i(4 downto 2) select  --1k pages
         cs_io_int  <=   "1110" when "000",  --x00    PIO
@@ -56,9 +63,10 @@ entity addr_decode is
                         "1011" when "010",  --x08    keybrd driver - IOSEL2 
                         "1111" when others;    
 
-    cs_mem_o <= cs_mem_int when upper_select and mem_select else   --PROM, Displayram
-                    "0111" when mem_select else  --RAM   
-                    "1111";                     
+    cs_mem_o <= "01111"     when sram_select else -- lower SRAM
+                cs_mem_int  when upper_select and mem_select else   --PROM, Displayram
+                "10111"     when mem_select else  --RAM   
+                "11111";                     
 
      cs_io_no  <=  cs_io_int when io_select else  --only one selcted yet
                 "1111"; 

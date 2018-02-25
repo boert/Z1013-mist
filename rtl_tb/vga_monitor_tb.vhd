@@ -48,9 +48,7 @@ end entity vga_monitor_tb;
 architecture testbench of vga_monitor_tb is
 
 
---  constant pixel_clock_period : time := 141 ns; -- zu schnell
---  constant pixel_clock_period : time := 248 ns;
-    constant pixel_clock_period : time := 669 ns; -- super!
+    constant pixel_clock_period : time := 1 sec / 40_000_000;
 
     -- define the maximum picture dimensions
     constant max_width  : natural := 800;
@@ -253,6 +251,7 @@ begin
         variable blue_int       : integer;
         --
         variable image          : image_t( 0 to max_width-1, 0 to max_height-1);
+        variable count          : integer := 0;
         variable pixelcount     : integer := 0;
         variable linecount      : integer := 0;
         --
@@ -287,7 +286,7 @@ begin
         if v_sync_falling then
 
             -- write image file
-            image_write_bpm( file_name_prefix & integer'image( frame_count) & ".bpm", pixelcount, linecount, image);
+            image_write_bpm( file_name_prefix & integer'image( frame_count) & ".bmp", pixelcount, linecount, image);
 
             frame_count := frame_count + 1;
             linecount   := 0;
@@ -301,7 +300,8 @@ begin
         
         if h_sync_rising then
             if v_sync = '1' then
-                pixelcount := 0;
+                pixelcount  := count;
+                count       := 0;
             end if;
         end if;
 
@@ -316,13 +316,13 @@ begin
 --             "  green " & integer'image( green_int) &
 --             "  blue  " & integer'image( blue_int);
 
-            if pixelcount < max_width and linecount < max_height then
-                image( pixelcount, linecount).red   := red_int;
-                image( pixelcount, linecount).green := green_int;
-                image( pixelcount, linecount).blue  := blue_int;
+            if count < max_width and linecount < max_height then
+                image( count, linecount).red   := red_int;
+                image( count, linecount).green := green_int;
+                image( count, linecount).blue  := blue_int;
             end if;
 
-            pixelcount := pixelcount + 1;
+            count := count + 1;
         end if;
 
         h_sync_old <= h_sync;

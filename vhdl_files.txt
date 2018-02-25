@@ -7,6 +7,12 @@ work    rtl_tb/scancode_tb.vhd
 work    rtl_tb/keyboard_matrix_tb.vhd
 work    rtl_tb/auto_start_tb.vhd
 work    rtl_tb/user_io_tb.vhd
+work    rtl_tb/addr_decode_tb.vhd
+work    rtl_tb/sdram_tb.vhd
+work    rtl_tb/top_mist_sdram_tb.vhd
+fmf     rtl_tb/fmf/conversions.vhd
+fmf     rtl_tb/fmf/gen_utils.vhd
+fmf     rtl_tb/fmf/mt48lc16m16a2.vhd
 # design files
 work    rtl/init_message_pkg.vhd
 work    rtl/top_mist.vhd
@@ -29,6 +35,7 @@ mist    library/mist/mist_components.vhd
 mist    library/mist/user_io.vhd
 mist    library/mist/data_io.vhd
 mist    library/mist/osd.vhd
+mist    library/mist/sdram.vhd
 support library/support/clock_blink.vhd
 support library/support/scancode_ascii.vhd
 support library/support/headersave_decode.vhd
@@ -37,7 +44,7 @@ overlay library/overlay/scanline.vhd
 overlay library/overlay/online_help.vhd
 overlay library/overlay/chars.vhd
 overlay library/overlay/text.vhd
-work 	library/vga/vga_controller_800_600.vhd
+work    library/vga/vga_controller_800_600.vhd
 T80     contrib/T80/T80_ALU.vhd
 T80     contrib/T80/T80_MCode.vhd
 T80     contrib/T80/T80_Pack.vhd
@@ -46,3 +53,4 @@ T80     contrib/T80/T80s.vhd
 T80     contrib/T80/T80.vhd
 # megawizard stuff
 work    cores/altpll0.vhd
+work    cores/altpll1.vhd

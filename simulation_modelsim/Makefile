@@ -1,4 +1,4 @@
-# simualtion makefile
+# simulation makefile
 # set the simulation target here
 #
 #
@@ -20,12 +20,14 @@
 
 
 TARGET=top_mist_tb
+TARGET=top_mist_sdram_tb
 #TARGET=online_help_tb
 #TARGET=osd_tb
 #TARGET=scancode_tb
 #TARGET=keyboard_matrix_tb
 #TARGET=auto_start_tb
 #TARGET=user_io_tb
+#TARGET=sdram_tb
 
 
 LIBS = $(shell grep --invert "\#" ../vhdl_files.txt | cut --field=1 --delimiter=" " | sort | uniq)
@@ -50,3 +52,6 @@ clean:
 	@for LIB in $(LIBS); do rm -rf $$LIB; done
 	rm -f transcript.log
 	rm -f vsim.wlf
+
+show_libs:
+	@echo $(LIBS)

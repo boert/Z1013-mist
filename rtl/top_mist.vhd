@@ -123,12 +123,12 @@ architecture rtl of top_mist is
         "O67,Joystick,practic 1/88,ju+te 6/87,practic 4/87,ERF-Soft;" & -- 00,10,01,11
         "OB,Autostart,Enable,Disable;" &
         "T1,Reset;" &
-		"V0," & version & ", " & compile_time;
+        "V0," & version & ", " & compile_time;
         -- O = option
         -- T = toggle
-		-- F = file
-		-- S = SD-image
-		-- V = version number
+        -- F = file
+        -- S = SD-image
+        -- V = version number
 
     -- named bit numbers
     constant uc_reset_bit   : natural := 0;
@@ -171,6 +171,7 @@ architecture rtl of top_mist is
     --
     signal redz0mb1e_1_ramAddr      : std_logic_vector(15 downto 0);
     signal redz0mb1e_1_ramData_out  : std_logic_vector( 7 downto 0);
+    signal redz0mb1e_1_ramData_in   : std_logic_vector( 7 downto 0);
     signal redz0mb1e_1_ramCE_N      : std_logic;
     signal redz0mb1e_1_ramWe_N      : std_logic;
     signal redz0mb1e_1_ramOe_N      : std_logic;
@@ -178,6 +179,7 @@ architecture rtl of top_mist is
     signal sdram_din              : std_logic_vector(7 downto 0);
     signal sdram_dout             : std_logic_vector(7 downto 0);
     signal sdram_addr             : std_logic_vector(15 downto 0);
+    signal sdram_addr_addr        : std_logic_vector(24 downto 0);
     signal sdram_oe               : std_logic;
     signal sdram_wr               : std_logic;
     --
@@ -242,21 +244,38 @@ architecture rtl of top_mist is
 
     -- select the global clock source
     alias  sys_clk      : std_logic is clk_27( 0);
+    signal sys_clk120   : std_logic;
     signal pll_locked   : std_logic;
+    signal pll1_locked  : std_logic;
 
 
 begin
 
+    ------------------------------------
     -- default outputs
     uart_tx         <= uart_rx;
     test_point_tp1  <= uart_rx when rising_edge( clk_27( 1));
 
-
+    ------------------------------------
     -- generate all necessary clocks
-    altpll0_inst: entity work.altpll0
+    -- 27 MHz --> 120 MHz
+    altpll1_inst: entity work.altpll1
     port map
     (
         inclk0   => sys_clk,      -- 27 MHz
+        locked   => pll1_locked,
+        c0       => sys_clk120
+    );
+
+    -- pll constraints:
+    -- f_in     27 MHz  (5 - 470 MHz)
+    -- f_PFD    ???     (5 - 325 MHz)
+    -- f_VCO    ???     (600 - 1300 MHz)
+    -- f_out    ???     (max. 402 MHz)
+    altpll0_inst: entity work.altpll0
+    port map
+    (
+        inclk0   => sys_clk120,   -- 120 MHz (was: 27 MHz)
         locked   => pll_locked,
         c0       => video_clk60,  -- 60 MHz, SVGA 800x600@60MHz, for 64x16 mode
         c1       => video_clk40,  -- 40 MHz, SVGA 800x600@60Hz
@@ -290,6 +309,7 @@ begin
             or ( reset_n = '0')                                                 -- reset button S2 / JTAG reset line
             or ( buttons( 1) = '1')                                             -- right device button
             or ( pll_locked = '0')
+            or ( pll1_locked = '0')
             or ( data_io_inst_download = '1' and unsigned( data_io_index) = 0)  -- download possible ROM image
         then
             reset_counter   <= 255;
@@ -345,7 +365,7 @@ begin
     redz0mb1e_1 : entity work.redz0mb1e
     port map (
         -- system
-     	reset_n               => sys_reset_n,               -- : in std_logic;
+        reset_n               => sys_reset_n,               -- : in std_logic;
         --
         cpu_clk               => cpu_clk,                   -- : in std_logic;
         cpu_hold_n            => not( hs_decode_download),  -- : in std_logic;
@@ -364,12 +384,12 @@ begin
         col_fg                => color_foreground,          -- white
         col_bg                => color_background,          -- black
         -- SRAM interface
-        ramAddr	              => redz0mb1e_1_ramAddr,       -- : out   std_logic_vector(15 downto 0);
-        ramData_in            => sdram_dout,                -- : in    std_logic_vector(7 downto 0);
+        ramAddr               => redz0mb1e_1_ramAddr,       -- : out   std_logic_vector(15 downto 0);
+        ramData_in            => redz0mb1e_1_ramData_in,    -- : in    std_logic_vector(7 downto 0);
         ramData_out           => redz0mb1e_1_ramData_out,   -- : out   std_logic_vector(7 downto 0);
-        ramOe_N	              => redz0mb1e_1_ramOe_N,       -- : out   std_logic; 
-        ramCE_N	              => redz0mb1e_1_ramCE_N,       -- : out   std_logic;
-        ramWe_N	              => redz0mb1e_1_ramWe_N,       -- : out   std_logic
+        ramOe_N               => redz0mb1e_1_ramOe_N,       -- : out   std_logic; 
+        ramCE_N               => redz0mb1e_1_ramCE_N,       -- : out   std_logic;
+        ramWe_N               => redz0mb1e_1_ramWe_N,       -- : out   std_logic
         -- user port (PIO port A) for joystick
         x4_in                 => redz0mb1e_1_x4_in,         -- : in    std_logic_vector(7 downto 0);
         x4_out                => redz0mb1e_1_x4_out,        -- : out   std_logic_vector(7 downto 0)
@@ -402,7 +422,8 @@ begin
     -- offset:  0x0000
     --
     ram : block is
-        constant size   : natural := 16384;
+        --constant size   : natural := 16384;
+        constant size   : natural := 1024;
         constant offset : natural := 0;
         type ram_type is array ( 0 to size - 1) of std_logic_vector( sdram_din'range);
         signal ram  : ram_type;
@@ -411,29 +432,46 @@ begin
         process
         begin
             wait until rising_edge( cpu_clk);
-            if sdram_wr = '1' then
+            if sdram_wr = '1' and unsigned( sdram_addr) < size then
                 ram( to_integer( unsigned( sdram_addr))) <= sdram_din;
             end if;
+
             if unsigned( sdram_addr) < size then
-                sdram_dout <= ram( to_integer( unsigned( sdram_addr)));
+                -- internal block RAM
+                redz0mb1e_1_ramData_in  <= ram( to_integer( unsigned( sdram_addr)));
             else
-                sdram_dout <= ( others => 'Z');
+                -- external SDRAM
+                redz0mb1e_1_ramData_in  <= sdram_dout;
             end if;
         end process;
 
+        dram_clk        <= ram_clk;
+        sdram_addr_addr <= "000000000" & sdram_addr;
+        sdram_controller_inst: sdram 
+        port map
+        (
+            -- interface to the MT48LC16M16 chip
+            sd_data => dram_dq,             -- : inout std_logic_vector(15 downto 0);  -- 16 bit bidirectional data bus
+            sd_addr => dram_a,              -- : out   std_logic_vector(12 downto 0);  -- 13 bit multiplexed address bus
+            sd_dqm  => dram_dqm,            -- : out   std_logic_vector(1 downto 0);   -- two byte masks
+            sd_ba   => dram_ba,             -- : out   std_logic_vector(1 downto 0);   -- two banks
+            sd_cs   => dram_cs_n,           -- : out   std_logic;                      -- a single chip select
+            sd_we   => dram_we_n,           -- : out   std_logic;                      -- write enable
+            sd_ras  => dram_ras_n,          -- : out   std_logic;                      -- row address select
+            sd_cas  => dram_cas_n,          -- : out   std_logic;                      -- columns address select
+            -- system interface                     
+            init    => sys_reset,           -- : in    std_logic;                      -- init signal after FPGA config to initialize RAM
+            clk     => ram_clk,             -- : in    std_logic;                      -- sdram is accessed at up to 128MHz
+            clkref  => cpu_clk,             -- : in    std_logic;                      -- reference clock to sync to
+            -- cpu/chipset interface
+            din     => sdram_din,           -- : in    std_logic_vector(7 downto 0);    -- data input from chipset/cpu
+            dout    => sdram_dout,          -- : out   std_logic_vector(7 downto 0);    -- data output to chipset/cpu
+            addr    => sdram_addr_addr,     -- : in    std_logic_vector(24 downto 0);   -- 25 bit byte address
+            oe      => sdram_oe,            -- : in    std_logic;                       -- cpu/chipset requests read
+            we      => sdram_wr             -- : in    std_logic                        -- cpu/chipset requests write
+        );
+
     end block ram;
-    
-    -- disable external dram
-    dram_cs_n   <= '1';
-    dram_we_n   <= '1';
-    dram_ras_n  <= '1';
-    dram_cas_n  <= '1';
-    -- reduce simulation warnings about missing drivers
-    dram_dq     <= ( others => 'Z');
-    dram_a      <= ( others => 'Z');
-    dram_clk    <= '0';
-    dram_dqm    <= ( others => 'Z');
-    dram_ba     <= ( others => 'Z');
    
 
     ------------------------------------
@@ -480,7 +518,7 @@ begin
         spi_miso       => spi_do,
         spi_mosi       => spi_di,
         --
-		status         => user_io_status,      -- : out std_logic_vector( 31 downto 0);
+        status         => user_io_status,      -- : out std_logic_vector( 31 downto 0);
         --
         -- internal interfaces
         joystick_0     => joystick_0,          -- : out std_logic_vector( 7 downto 0);
@@ -488,25 +526,25 @@ begin
         buttons        => buttons,             -- : out std_logic_vector( 1 downto 0);
         switches       => switches,            -- : out std_logic_vector( 1 downto 0);
         -- connection to sd card emulation
-		sd_lba         => ( others => '0'),    -- : in  std_logic_vector( 31 downto 0);
-		sd_rd          => '0',                 -- : in  std_logic;
-		sd_wr          => '0',                 -- : in  std_logic;
-		sd_ack         => open,                -- : out std_logic;
-		sd_conf        => '0',                 -- : in  std_logic;
-		sd_sdhc        => '0',                 -- : in  std_logic;
-		sd_dout        => open,                -- : out std_logic_vector( 7 downto 0); -- valid on rising edge of sd_dout_strobe
-		sd_dout_strobe => open,                -- : out std_logic;
-		sd_din         => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
-		sd_din_strobe  => open,                -- : out std_logic;
-		-- ps2 keyboard emulation
-		ps2_clk        => '0',                 -- : in  std_logic; -- 12-16khz provided by core
-		ps2_kbd_clk    => open,                -- : out std_logic;
-		ps2_kbd_data   => open,                -- : out std_logic;
-		ps2_mouse_clk  => open,                -- : out std_logic;
-		ps2_mouse_data => open,                -- : out std_logic;
-		-- serial com port, not used jet 
-		serial_data    => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
-		serial_strobe  => '0',                 -- : in  std_logic
+        sd_lba         => ( others => '0'),    -- : in  std_logic_vector( 31 downto 0);
+        sd_rd          => '0',                 -- : in  std_logic;
+        sd_wr          => '0',                 -- : in  std_logic;
+        sd_ack         => open,                -- : out std_logic;
+        sd_conf        => '0',                 -- : in  std_logic;
+        sd_sdhc        => '0',                 -- : in  std_logic;
+        sd_dout        => open,                -- : out std_logic_vector( 7 downto 0); -- valid on rising edge of sd_dout_strobe
+        sd_dout_strobe => open,                -- : out std_logic;
+        sd_din         => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
+        sd_din_strobe  => open,                -- : out std_logic;
+        -- ps2 keyboard emulation
+        ps2_clk        => '0',                 -- : in  std_logic; -- 12-16khz provided by core
+        ps2_kbd_clk    => open,                -- : out std_logic;
+        ps2_kbd_data   => open,                -- : out std_logic;
+        ps2_mouse_clk  => open,                -- : out std_logic;
+        ps2_mouse_data => open,                -- : out std_logic;
+        -- serial com port, not used jet 
+        serial_data    => ( others => '0'),    -- : in  std_logic_vector( 7 downto 0);
+        serial_strobe  => '0',                 -- : in  std_logic
         --
         -- FPGA clk domain
         clk            => cpu_clk,             -- : in  std_logic;
@@ -607,10 +645,10 @@ begin
 
 
     online_help_inst : entity overlay.online_help
-	generic map
-	(
-		init_message	=> init_message
-	)
+    generic map
+    (
+        init_message    => init_message
+    )
     port map
     (
         active          => user_io_status( help_bit), -- : in  std_logic;
@@ -639,21 +677,21 @@ begin
     port map
     (
         -- OSDs pixel clock
-	    pclk           => video_clk60,         -- : in  std_logic;
+        pclk           => video_clk60,         -- : in  std_logic;
         -- SPI interface                       -- 
-		sck            => spi_sck,             -- : in  std_logic;
-		ss             => spi_ss3,             -- : in  std_logic;
-		sdi            => spi_di,              -- : in  std_logic;
-		-- VGA signals coming from core
-		red_in         => onlinehelp_red_out,    -- : in  std_logic_vector( 5 downto 0);
-		green_in       => onlinehelp_green_out,  -- : in  std_logic_vector( 5 downto 0);
-		blue_in        => onlinehelp_blue_out,   -- : in  std_logic_vector( 5 downto 0);
+        sck            => spi_sck,             -- : in  std_logic;
+        ss             => spi_ss3,             -- : in  std_logic;
+        sdi            => spi_di,              -- : in  std_logic;
+        -- VGA signals coming from core
+        red_in         => onlinehelp_red_out,    -- : in  std_logic_vector( 5 downto 0);
+        green_in       => onlinehelp_green_out,  -- : in  std_logic_vector( 5 downto 0);
+        blue_in        => onlinehelp_blue_out,   -- : in  std_logic_vector( 5 downto 0);
         hs_in          => onlinehelp_hsync_out,  -- : in  std_logic;
         vs_in          => onlinehelp_vsync_out,  -- : in  std_logic;
-		-- VGA signals going to video connector
-		red_out        => vga_red,             -- : out std_logic_vector( 5 downto 0);
-		green_out      => vga_green,           -- : out std_logic_vector( 5 downto 0);
-		blue_out       => vga_blue,            -- : out std_logic_vector( 5 downto 0);
+        -- VGA signals going to video connector
+        red_out        => vga_red,             -- : out std_logic_vector( 5 downto 0);
+        green_out      => vga_green,           -- : out std_logic_vector( 5 downto 0);
+        blue_out       => vga_blue,            -- : out std_logic_vector( 5 downto 0);
         hs_out         => vga_hsync,           -- : out std_logic;
         vs_out         => vga_vsync            -- : out std_logic
     );

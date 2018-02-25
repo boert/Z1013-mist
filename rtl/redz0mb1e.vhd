@@ -87,7 +87,8 @@ architecture behave of redz0mb1E is
     --memory block select
     signal sel_rom_n        : std_logic;
     signal sel_vram_n       : std_logic;
-    signal sel_ram_n        : std_logic;
+    signal sel_dram_n       : std_logic;
+    signal sel_sram_n       : std_logic;
   
     --io
     signal sel_io_pio_n     : std_logic;  --pio_select
@@ -115,7 +116,7 @@ architecture behave of redz0mb1E is
     signal bstb2PIO_n       : std_logic := '1'; 
 
     -- signals for address decoder
-    signal cs_mem           : std_logic_vector(3 downto 0);
+    signal cs_mem           : std_logic_vector(4 downto 0);
     signal cs_io_n          : std_logic_vector(3 downto 0);
   
     -- signals for peters extension
@@ -170,22 +171,31 @@ begin
     );
 
 
-    -- RAM
-    SRAM_control_p: process(sel_rom_n, sel_ram_n, wr_n, data4cpu, addr)
+    -- RAM access
+    SRAM_control_p: process(sel_dram_n, sel_sram_n, wr_n, data4cpu, addr)
     begin
-        if wr_n = '0' and sel_ram_n = '0' then
-            -- write to SRAM
-            ramWe_N     <= '0';     
-            ramOe_N     <= '1';
-            ramData_out <= data4cpu;
-        else
-            -- read
+        -- read (default)
+        ramWe_N     <= '1';
+        ramOe_N     <= '0';
+        ramData_out <= (others => '-');
+
+        -- activate SDRAM auto refresh
+        if rfsh_n = '0' then
             ramWe_N     <= '1';
-            ramOe_N     <= '0';
-            ramData_out <= (others => '-');
+            ramOe_N     <= '1';
+        end if;
+
+        -- mem access
+        if sel_sram_n = '0' or sel_dram_n = '0' then
+            if wr_n = '0' then
+                -- write to SRAM
+                ramWe_N     <= '0';     
+                ramOe_N     <= '1';
+                ramData_out <= data4cpu;
+            end if;         
         end if;         
 
-        ramCe_N         <= sel_ram_n;
+        ramCe_N         <= sel_sram_n and sel_dram_n;
         ramAddr         <= addr(15 downto 0);
     end process;
     data4ram <= ramData_in;
@@ -224,7 +234,7 @@ begin
         IRQEna_o        => IRQEna4PIO,
         INTn_o          => int_sense_n,
         astb_n          => astb2PIO_n,                 -- Data strobe in, is able to generate IREQ
-        ardy_n          => rdya4PIO_n,                 --
+        ardy_n          => rdya4PIO_n,
         porta_o         => porta4pio,
         porta_i         => porta2pio,
         bstb_n          => bstb2PIO_n,
@@ -305,7 +315,8 @@ begin
     -- memory selection
     sel_rom_n       <=  cs_mem(2);
     sel_vram_n      <=  cs_mem(1);
-    sel_ram_n       <=  cs_mem(3);
+    sel_dram_n      <=  cs_mem(3);
+    sel_sram_n      <=  cs_mem(4);
 
     -- io selection
     sel_io_pio_n    <= cs_io_n(0);
@@ -327,7 +338,8 @@ begin
                 data4PIO   when sel_io_pio_n    = '0' else
                 data4ROM   when sel_rom_n       = '0' else
                 data4video when sel_vram_n      = '0' else
-                data4RAM   when sel_ram_n       = '0' else
+                data4RAM   when sel_sram_n      = '0' else
+                data4RAM   when sel_dram_n      = '0' else
                 data4ext   when sel_io_1_n      = '0' else
                 "11111111";                                 -- FFh for unused
 
