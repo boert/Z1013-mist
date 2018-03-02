@@ -174,10 +174,10 @@ BEGIN
 		clk0_duty_cycle => 50,
 		clk0_multiply_by => 1,
 		clk0_phase_shift => "0",
-		clk1_divide_by => 3,
+		clk1_divide_by => 15,
 		clk1_duty_cycle => 50,
-		clk1_multiply_by => 1,
-		clk1_phase_shift => "0",
+		clk1_multiply_by => 4,
+		clk1_phase_shift => "2300",
 		clk2_divide_by => 30,
 		clk2_duty_cycle => 50,
 		clk2_multiply_by => 1,
@@ -281,7 +281,7 @@ END SYN;
 -- Retrieval info: PRIVATE: DUTY_CYCLE3 STRING "50.00000000"
 -- Retrieval info: PRIVATE: DUTY_CYCLE4 STRING "50.00000000"
 -- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE0 STRING "60.000000"
--- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE1 STRING "40.000000"
+-- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE1 STRING "32.000000"
 -- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE2 STRING "4.000000"
 -- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE3 STRING "2.000000"
 -- Retrieval info: PRIVATE: EFF_OUTPUT_FREQ_VALUE4 STRING "32.000000"
@@ -322,7 +322,7 @@ END SYN;
 -- Retrieval info: PRIVATE: MULT_FACTOR4 NUMERIC "148"
 -- Retrieval info: PRIVATE: NORMAL_MODE_RADIO STRING "1"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ0 STRING "60.00000000"
--- Retrieval info: PRIVATE: OUTPUT_FREQ1 STRING "40.00000000"
+-- Retrieval info: PRIVATE: OUTPUT_FREQ1 STRING "32.00000000"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ2 STRING "4.00000000"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ3 STRING "2.00000000"
 -- Retrieval info: PRIVATE: OUTPUT_FREQ4 STRING "32.00000000"
@@ -339,13 +339,13 @@ END SYN;
 -- Retrieval info: PRIVATE: PHASE_RECONFIG_FEATURE_ENABLED STRING "1"
 -- Retrieval info: PRIVATE: PHASE_RECONFIG_INPUTS_CHECK STRING "0"
 -- Retrieval info: PRIVATE: PHASE_SHIFT0 STRING "0.00000000"
--- Retrieval info: PRIVATE: PHASE_SHIFT1 STRING "0.00000000"
+-- Retrieval info: PRIVATE: PHASE_SHIFT1 STRING "2.30000000"
 -- Retrieval info: PRIVATE: PHASE_SHIFT2 STRING "0.00000000"
 -- Retrieval info: PRIVATE: PHASE_SHIFT3 STRING "0.00000000"
 -- Retrieval info: PRIVATE: PHASE_SHIFT4 STRING "0.00000000"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_STEP_ENABLED_CHECK STRING "0"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT0 STRING "ns"
--- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT1 STRING "deg"
+-- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT1 STRING "ns"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT2 STRING "deg"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT3 STRING "ps"
 -- Retrieval info: PRIVATE: PHASE_SHIFT_UNIT4 STRING "ps"
@@ -396,10 +396,10 @@ END SYN;
 -- Retrieval info: CONSTANT: CLK0_DUTY_CYCLE NUMERIC "50"
 -- Retrieval info: CONSTANT: CLK0_MULTIPLY_BY NUMERIC "1"
 -- Retrieval info: CONSTANT: CLK0_PHASE_SHIFT STRING "0"
--- Retrieval info: CONSTANT: CLK1_DIVIDE_BY NUMERIC "3"
+-- Retrieval info: CONSTANT: CLK1_DIVIDE_BY NUMERIC "15"
 -- Retrieval info: CONSTANT: CLK1_DUTY_CYCLE NUMERIC "50"
--- Retrieval info: CONSTANT: CLK1_MULTIPLY_BY NUMERIC "1"
--- Retrieval info: CONSTANT: CLK1_PHASE_SHIFT STRING "0"
+-- Retrieval info: CONSTANT: CLK1_MULTIPLY_BY NUMERIC "4"
+-- Retrieval info: CONSTANT: CLK1_PHASE_SHIFT STRING "2300"
 -- Retrieval info: CONSTANT: CLK2_DIVIDE_BY NUMERIC "30"
 -- Retrieval info: CONSTANT: CLK2_DUTY_CYCLE NUMERIC "50"
 -- Retrieval info: CONSTANT: CLK2_MULTIPLY_BY NUMERIC "1"

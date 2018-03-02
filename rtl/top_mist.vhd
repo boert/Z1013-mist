@@ -153,11 +153,11 @@ architecture rtl of top_mist is
     signal scancode               : std_logic_vector(7 downto 0);
     --                            
     signal video_clk60            : std_logic;
-    signal video_clk40            : std_logic;
     signal cpu_clk                : std_logic;
     signal cpu_clk_fast           : std_logic;
     signal cpu_clk_slow           : std_logic;
     signal ram_clk                : std_logic;
+--  signal video_clk40            : std_logic;
     --
     signal ascii                  : std_logic_vector( 7 downto 0);
     signal ascii_press            : std_logic;
@@ -278,7 +278,7 @@ begin
         inclk0   => sys_clk120,   -- 120 MHz (was: 27 MHz)
         locked   => pll_locked,
         c0       => video_clk60,  -- 60 MHz, SVGA 800x600@60MHz, for 64x16 mode
-        c1       => video_clk40,  -- 40 MHz, SVGA 800x600@60Hz
+        c1       => dram_clk,     -- 32 MHz, 2.3 ns after ram_clk
         c2       => cpu_clk_fast, --  4 MHz
         c3       => cpu_clk_slow, --  2 MHz
         c4       => ram_clk       -- 32 MHz
@@ -414,64 +414,34 @@ begin
     sdram_addr  <= redz0mb1e_1_ramAddr       when hs_decode_download = '0' else hs_decode_addr;
     sdram_wr    <= not( redz0mb1e_1_ramWe_N) when hs_decode_download = '0' else hs_decode_wr;
     sdram_oe    <= not( redz0mb1e_1_ramOe_N) when hs_decode_download = '0' else '1'; -- write only
-   
 
-    ------------------------------------
-    -- internal block RAM, with load function
-    -- size:    16k
-    -- offset:  0x0000
-    --
-    ram : block is
-        --constant size   : natural := 16384;
-        constant size   : natural := 1024;
-        constant offset : natural := 0;
-        type ram_type is array ( 0 to size - 1) of std_logic_vector( sdram_din'range);
-        signal ram  : ram_type;
-    begin
+    -- fill up address bits
+    sdram_addr_addr <= "000000000" & sdram_addr;
 
-        process
-        begin
-            wait until rising_edge( cpu_clk);
-            if sdram_wr = '1' and unsigned( sdram_addr) < size then
-                ram( to_integer( unsigned( sdram_addr))) <= sdram_din;
-            end if;
-
-            if unsigned( sdram_addr) < size then
-                -- internal block RAM
-                redz0mb1e_1_ramData_in  <= ram( to_integer( unsigned( sdram_addr)));
-            else
-                -- external SDRAM
-                redz0mb1e_1_ramData_in  <= sdram_dout;
-            end if;
-        end process;
-
-        dram_clk        <= ram_clk;
-        sdram_addr_addr <= "000000000" & sdram_addr;
-        sdram_controller_inst: sdram 
-        port map
-        (
-            -- interface to the MT48LC16M16 chip
-            sd_data => dram_dq,             -- : inout std_logic_vector(15 downto 0);  -- 16 bit bidirectional data bus
-            sd_addr => dram_a,              -- : out   std_logic_vector(12 downto 0);  -- 13 bit multiplexed address bus
-            sd_dqm  => dram_dqm,            -- : out   std_logic_vector(1 downto 0);   -- two byte masks
-            sd_ba   => dram_ba,             -- : out   std_logic_vector(1 downto 0);   -- two banks
-            sd_cs   => dram_cs_n,           -- : out   std_logic;                      -- a single chip select
-            sd_we   => dram_we_n,           -- : out   std_logic;                      -- write enable
-            sd_ras  => dram_ras_n,          -- : out   std_logic;                      -- row address select
-            sd_cas  => dram_cas_n,          -- : out   std_logic;                      -- columns address select
-            -- system interface                     
-            init    => sys_reset,           -- : in    std_logic;                      -- init signal after FPGA config to initialize RAM
-            clk     => ram_clk,             -- : in    std_logic;                      -- sdram is accessed at up to 128MHz
-            clkref  => cpu_clk,             -- : in    std_logic;                      -- reference clock to sync to
-            -- cpu/chipset interface
-            din     => sdram_din,           -- : in    std_logic_vector(7 downto 0);    -- data input from chipset/cpu
-            dout    => sdram_dout,          -- : out   std_logic_vector(7 downto 0);    -- data output to chipset/cpu
-            addr    => sdram_addr_addr,     -- : in    std_logic_vector(24 downto 0);   -- 25 bit byte address
-            oe      => sdram_oe,            -- : in    std_logic;                       -- cpu/chipset requests read
-            we      => sdram_wr             -- : in    std_logic                        -- cpu/chipset requests write
-        );
-
-    end block ram;
+    sdram_controller_inst: sdram 
+    port map
+    (
+        -- interface to the MT48LC16M16 chip
+        sd_data => dram_dq,             -- : inout std_logic_vector(15 downto 0);  -- 16 bit bidirectional data bus
+        sd_addr => dram_a,              -- : out   std_logic_vector(12 downto 0);  -- 13 bit multiplexed address bus
+        sd_dqm  => dram_dqm,            -- : out   std_logic_vector(1 downto 0);   -- two byte masks
+        sd_ba   => dram_ba,             -- : out   std_logic_vector(1 downto 0);   -- two banks
+        sd_cs   => dram_cs_n,           -- : out   std_logic;                      -- a single chip select
+        sd_we   => dram_we_n,           -- : out   std_logic;                      -- write enable
+        sd_ras  => dram_ras_n,          -- : out   std_logic;                      -- row address select
+        sd_cas  => dram_cas_n,          -- : out   std_logic;                      -- columns address select
+        -- system interface                     
+        init    => sys_reset,           -- : in    std_logic;                      -- init signal after FPGA config to initialize RAM
+        clk     => ram_clk,             -- : in    std_logic;                      -- sdram is accessed at up to 128MHz
+        clkref  => cpu_clk,             -- : in    std_logic;                      -- reference clock to sync to
+        -- cpu/chipset interface
+        din     => sdram_din,           -- : in    std_logic_vector(7 downto 0);    -- data input from chipset/cpu
+        dout    => sdram_dout,          -- : out   std_logic_vector(7 downto 0);    -- data output to chipset/cpu
+        addr    => sdram_addr_addr,     -- : in    std_logic_vector(24 downto 0);   -- 25 bit byte address
+        oe      => sdram_oe,            -- : in    std_logic;                       -- cpu/chipset requests read
+        we      => sdram_wr             -- : in    std_logic                        -- cpu/chipset requests write
+    );
+    redz0mb1e_1_ramData_in  <= sdram_dout;
    
 
     ------------------------------------

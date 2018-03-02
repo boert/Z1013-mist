@@ -34,31 +34,39 @@ architecture testbench of addr_decode_tb is
     signal tb_ioreq_n        : std_logic := '1';
     signal tb_mreq_n         : std_logic := '1';
     signal tb_rfsh_n         : std_logic := '1';
+    signal tb_rom_disable    : std_logic := '0';
+    signal tb_we_F000        : std_logic := '0';
+    signal tb_we_F800        : std_logic := '0';
     --
-    signal tb_cs_mem_n       : std_logic_vector(4 downto 0);
+    signal tb_write_protect  : std_logic;
+    signal tb_cs_mem_n       : std_logic_vector(3 downto 0);
     signal tb_cs_io_n        : std_logic_vector(3 downto 0);
     --
     --
-    alias sel_rom_n          : std_logic is tb_cs_mem_n( 2);
     alias sel_vram_n         : std_logic is tb_cs_mem_n( 1);
+    alias sel_rom_n          : std_logic is tb_cs_mem_n( 2);
     alias sel_ram_n          : std_logic is tb_cs_mem_n( 3);
     --
     alias sel_io_pio_n       : std_logic is tb_cs_io_n( 0);
-    alias sel_io_kybrow_n    : std_logic is tb_cs_io_n( 2);
     alias sel_io_1_n         : std_logic is tb_cs_io_n( 1);  
+    alias sel_io_kybrow_n    : std_logic is tb_cs_io_n( 2);
 
 begin
 
     dut: entity work.addr_decode
     port map
     (
-        addr_i      => tb_addr,                -- : in  std_logic_vector(15 downto 0);
-        ioreq_ni    => tb_ioreq_n,             -- : in  std_logic;
-        mreq_ni     => tb_mreq_n,              -- : in  std_logic;
-        rfsh_ni     => tb_rfsh_n,              -- : in  std_logic;
+        addr_i          => tb_addr,                 -- : in  std_logic_vector(15 downto 0);
+        ioreq_ni        => tb_ioreq_n,              -- : in  std_logic;
+        mreq_ni         => tb_mreq_n,               -- : in  std_logic;
+        rfsh_ni         => tb_rfsh_n,               -- : in  std_logic;
+        rom_disable     => tb_rom_disable,          -- : in  std_logic;
+        we_F000         => tb_we_F000,              -- : in  std_logic;
+        we_F800         => tb_we_F800,              -- : in  std_logic;
         --
-        cs_mem_o    => tb_cs_mem_n,            -- : out std_logic_vector(3 downto 0);--shall be low active
-        cs_io_no    => tb_cs_io_n              -- : out std_logic_vector(3 downto 0)  --low active
+        write_protect   => tb_write_protect,        -- : out std_logic;
+        cs_mem_no       => tb_cs_mem_n,             -- : out std_logic_vector(3 downto 0);--low active
+        cs_io_no        => tb_cs_io_n               -- : out std_logic_vector(3 downto 0)  --low active
     );
 
     main: process

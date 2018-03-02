@@ -88,7 +88,6 @@ architecture behave of redz0mb1E is
     signal sel_rom_n        : std_logic;
     signal sel_vram_n       : std_logic;
     signal sel_dram_n       : std_logic;
-    signal sel_sram_n       : std_logic;
   
     --io
     signal sel_io_pio_n     : std_logic;  --pio_select
@@ -116,8 +115,9 @@ architecture behave of redz0mb1E is
     signal bstb2PIO_n       : std_logic := '1'; 
 
     -- signals for address decoder
-    signal cs_mem           : std_logic_vector(4 downto 0);
+    signal cs_mem_n         : std_logic_vector(3 downto 0);
     signal cs_io_n          : std_logic_vector(3 downto 0);
+    signal write_protect    : std_logic;
   
     -- signals for peters extension
     signal extension_reg        : std_logic_vector(7 downto 0);
@@ -125,6 +125,8 @@ architecture behave of redz0mb1E is
     constant  ext_clk_2MHz_4MHz : natural := 6;
     constant  ext_2nd_zgen      : natural := 5;
     constant  ext_romdis        : natural := 4;
+    constant  ext_we_F000       : natural := 2;
+    constant  ext_we_F800       : natural := 1;
   
   
 begin
@@ -172,7 +174,7 @@ begin
 
 
     -- RAM access
-    SRAM_control_p: process(sel_dram_n, sel_sram_n, wr_n, data4cpu, addr)
+    RAM_control_p: process(sel_dram_n, wr_n, data4cpu, addr)
     begin
         -- read (default)
         ramWe_N     <= '1';
@@ -186,16 +188,14 @@ begin
         end if;
 
         -- mem access
-        if sel_sram_n = '0' or sel_dram_n = '0' then
-            if wr_n = '0' then
-                -- write to SRAM
-                ramWe_N     <= '0';     
-                ramOe_N     <= '1';
-                ramData_out <= data4cpu;
-            end if;         
+        if sel_dram_n = '0' and wr_n = '0' and write_protect = '0' then
+            -- write to RAM
+            ramWe_N     <= '0';     
+            ramOe_N     <= '1';
+            ramData_out <= data4cpu;
         end if;         
 
-        ramCe_N         <= sel_sram_n and sel_dram_n;
+        ramCe_N         <= sel_dram_n;
         ramAddr         <= addr(15 downto 0);
     end process;
     data4ram <= ramData_in;
@@ -308,20 +308,24 @@ begin
         ioreq_ni        => ioreq_n,
         mreq_ni         => mreq_n,
         rfsh_ni         => rfsh_n,
-        cs_mem_o        => cs_mem,
+        rom_disable     => extension_reg( ext_romdis),
+        we_F000         => extension_reg( ext_we_F000),
+        we_F800         => extension_reg( ext_we_F800),
+        --
+        write_protect   => write_protect,
+        cs_mem_no       => cs_mem_n,
         cs_io_no        => cs_io_n
     );
 
     -- memory selection
-    sel_rom_n       <=  cs_mem(2);
-    sel_vram_n      <=  cs_mem(1);
-    sel_dram_n      <=  cs_mem(3);
-    sel_sram_n      <=  cs_mem(4);
+    sel_vram_n      <= cs_mem_n(1);
+    sel_rom_n       <= cs_mem_n(2);
+    sel_dram_n      <= cs_mem_n(3);
 
     -- io selection
     sel_io_pio_n    <= cs_io_n(0);
-    sel_io_kybrow_n <= cs_io_n(2);
     sel_io_1_n      <= cs_io_n(1);  
+    sel_io_kybrow_n <= cs_io_n(2);
 
 
     -- signals to CPU
@@ -336,12 +340,10 @@ begin
     -- data BUS to cpu
     data2cpu <= "00000000" when boot_state      = '1' else  -- NOP on startup
                 data4PIO   when sel_io_pio_n    = '0' else
+                data4ext   when sel_io_1_n      = '0' else
                 data4ROM   when sel_rom_n       = '0' else
                 data4video when sel_vram_n      = '0' else
-                data4RAM   when sel_sram_n      = '0' else
-                data4RAM   when sel_dram_n      = '0' else
-                data4ext   when sel_io_1_n      = '0' else
-                "11111111";                                 -- FFh for unused
+                data4RAM;
 
 
     -- extension register 'PETERS-Platine'
@@ -349,7 +351,8 @@ begin
     begin
         wait until rising_edge( cpu_clk);
         if wr_n = '0' and sel_io_1_n = '0' then
-            extension_reg(7 downto 5)	<= data4cpu( 7 downto 5);
+            extension_reg(7 downto 4)	<= data4cpu(7 downto 4);
+            extension_reg(2 downto 1)	<= data4cpu(2 downto 1);
         end if;
         if reset_n = '0' then
             extension_reg   <= ( others => '0');

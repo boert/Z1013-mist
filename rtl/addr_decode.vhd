@@ -13,8 +13,8 @@
 -- this sources are declared to Open Source by the author
 
 -- Bert Lange:
--- add /cs for low SRAM
---
+-- change for 64k layout
+-- add ROM disable
 
 library ieee;
 use ieee.std_logic_1164.all;
@@ -23,51 +23,77 @@ use work.pkg_redz0mb1e.all;
 
 entity addr_decode is
 port (
-    addr_i   : in  std_logic_vector(15 downto 0);
-    ioreq_ni : in  std_logic;
-    mreq_ni  : in  std_logic;
-    rfsh_ni  : in  std_logic;
-    cs_mem_o : out std_logic_vector(4 downto 0);--shall be low active
-    cs_io_no : out std_logic_vector(3 downto 0)  --low active
+    addr_i          : in  std_logic_vector(15 downto 0);
+    ioreq_ni        : in  std_logic;
+    mreq_ni         : in  std_logic;
+    rfsh_ni         : in  std_logic;
+    rom_disable     : in  std_logic;
+    we_F000         : in  std_logic;
+    we_F800         : in  std_logic;
+    --
+    write_protect   : out std_logic;
+    cs_mem_no       : out std_logic_vector(3 downto 0); --low active
+    cs_io_no        : out std_logic_vector(3 downto 0)  --low active
     );
 end entity addr_decode;
 
+
 architecture behave of addr_decode is
 
-    signal sram_select  : std_logic;
-    signal upper_select : boolean;
-    signal mem_select   : boolean;    --mem access (not refresh)
-    signal io_select    : boolean;
-    signal cs_mem_int   : std_logic_vector(4 downto 0);
-    signal cs_io_int    : std_logic_vector(3 downto 0);
+    signal mem_select           : boolean;    --mem access (not refresh)
+    signal io_select            : boolean;
+    signal cs_mem_int           : std_logic_vector(3 downto 0);
+    signal cs_mem_int_romdis    : std_logic_vector(3 downto 0);
+    signal cs_io_int            : std_logic_vector(3 downto 0);
   
-  begin
-      sram_select  <= '1' when unsigned( addr_i) < 1024 and mreq_ni = '0' and rfsh_ni = '1' else '0'; -- lowest 1k
-      upper_select <= addr_i(15 downto 13) = "111";  --lower is USER-RAM
-      mem_select   <= mreq_ni = '0' and rfsh_ni = '1'; --skip refresh cycles
-      io_select    <= ioreq_ni = '0';   
-        with addr_i(12 downto 10) select  --1k pages
-        cs_mem_int <=   "11110" when "000", --xE00   DK10
-                        "11111" when "001",  --xE400  free 
-                        "11111" when "010",  --xE800  free 
-                        "11101" when "011",  --xEC00  VideoRAM
-                        "11011" when "100",  --xF000  Monitor-ROM
-                        "11011" when "101",  --xF400  Monitor-ROM  
-                        "11011" when "110",  --xF800  extra ROM
-                        "11011" when "111",  --xFC00  extra ROM
-                        "11111" when others;    
+begin
+    
+    -- write protection for F000/F800
+    write_protect   <=
+        '1' when addr_i(15 downto 10) = "111100" and we_F000 = '0' else
+        '1' when addr_i(15 downto 10) = "111101" and we_F000 = '0' else
+        '1' when addr_i(15 downto 10) = "111110" and we_F800 = '0' else
+        '1' when addr_i(15 downto 10) = "111111" and we_F800 = '0' else
+        '0';
 
-        with addr_i(4 downto 2) select  --1k pages
-        cs_io_int  <=   "1110" when "000",  --x00    PIO
-                        "1101" when "001",  --x04    iosel1 ? 
-                        "1011" when "010",  --x08    keybrd driver - IOSEL2 
+    -- memory
+    mem_select   <= mreq_ni = '0' and rfsh_ni = '1'; --skip refresh cycles
+    with addr_i(15 downto 10) select  --1k pages
+        cs_mem_int <=   "0111" when "111000",  --xE000  RAM (DK10)
+                        "0111" when "111001",  --xE400  RAM (free) 
+                        "0111" when "111010",  --xE800  RAM (free) 
+                        "1101" when "111011",  --xEC00  VideoRAM
+                        "1011" when "111100",  --xF000  Monitor-ROM
+                        "1011" when "111101",  --xF400  Monitor-ROM  
+                        "1011" when "111110",  --xF800  extra ROM
+                        "1011" when "111111",  --xFC00  extra ROM
+                        "0111" when others;    
+
+    with addr_i(15 downto 10) select  --1k pages
+        cs_mem_int_romdis 
+                   <=   "0111" when "111000",  --xE000  RAM (DK10)
+                        "0111" when "111001",  --xE400  RAM (free) 
+                        "0111" when "111010",  --xE800  RAM (free) 
+                        "1101" when "111011",  --xEC00  VideoRAM
+                        "0111" when "111100",  --xF000  RAM (Monitor-ROM)
+                        "0111" when "111101",  --xF400  RAM (Monitor-ROM)  
+                        "0111" when "111110",  --xF800  RAM (extra ROM)
+                        "0111" when "111111",  --xFC00  RAM (extra ROM)
+                        "0111" when others;    
+
+    cs_mem_no <= cs_mem_int         when mem_select and rom_disable = '0' else
+                 cs_mem_int_romdis  when mem_select and rom_disable = '1' else
+                 "1111";                     
+
+    -- IO
+    io_select <= ioreq_ni = '0';   
+    with addr_i(7 downto 2) select  --4 byte pages
+        cs_io_int  <=   "1110" when "000000",  --x00    PIO
+                        "1101" when "000001",  --x04    iosel1, Peters-Platine 
+                        "1011" when "000010",  --x08    keybrd driver - IOSEL2 
                         "1111" when others;    
 
-    cs_mem_o <= "01111"     when sram_select else -- lower SRAM
-                cs_mem_int  when upper_select and mem_select else   --PROM, Displayram
-                "10111"     when mem_select else  --RAM   
-                "11111";                     
+    cs_io_no  <=  cs_io_int when io_select else  --only one selcted yet
+                  "1111"; 
 
-     cs_io_no  <=  cs_io_int when io_select else  --only one selcted yet
-                "1111"; 
-  end architecture behave;
+end architecture behave;

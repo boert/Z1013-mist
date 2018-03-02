@@ -3,6 +3,8 @@ quietly WaveActivateNextPane {} 0
 add wave -noupdate -radix hexadecimal /addr_decode_tb/tb_addr
 add wave -noupdate /addr_decode_tb/tb_ioreq_n
 add wave -noupdate /addr_decode_tb/tb_mreq_n
+add wave -noupdate /addr_decode_tb/tb_we_F000
+add wave -noupdate /addr_decode_tb/tb_we_F800
 add wave -noupdate -divider <NULL>
 add wave -noupdate /addr_decode_tb/tb_cs_io_n
 add wave -noupdate /addr_decode_tb/sel_io_1_n
@@ -13,8 +15,9 @@ add wave -noupdate -expand /addr_decode_tb/tb_cs_mem_n
 add wave -noupdate /addr_decode_tb/sel_ram_n
 add wave -noupdate /addr_decode_tb/sel_vram_n
 add wave -noupdate /addr_decode_tb/sel_rom_n
+add wave -noupdate /addr_decode_tb/tb_write_protect
 TreeUpdate [SetDefaultTree]
-WaveRestoreCursors {{Cursor 1} {547560000 ps} 0}
+WaveRestoreCursors {{Cursor 1} {433298833 ps} 0}
 quietly wave cursor active 1
 configure wave -namecolwidth 150
 configure wave -valuecolwidth 100

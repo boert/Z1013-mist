@@ -1,5 +1,5 @@
 ----------------------------------------------------------------------------------
--- sdram controller from mist project (verilog)
+-- sdram controller (vhdl)
 -- 
 -- Copyright (c) 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
@@ -46,15 +46,14 @@ port
     din     : in    std_logic_vector( 7 downto 0);  -- data input from chipset/cpu
     dout    : out   std_logic_vector( 7 downto 0);  -- data output to chipset/cpu
     addr    : in    std_logic_vector(24 downto 0);  -- 25 bit byte address
-    oe      : in    std_logic;              -- cpu/chipset requests read
-    we      : in    std_logic               -- cpu/chipset requests write
+    oe      : in    std_logic;                      -- cpu/chipset requests read
+    we      : in    std_logic                       -- cpu/chipset requests write
 );
 end entity sdram;
 
 
 architecture rtl of sdram is
 
-    -- no burst configured
     constant RASCAS_DELAY           : natural                       := 3;       -- tRCD>=20ns -> 2 cycles@64MHz
     constant BURST_LENGTH           : std_logic_vector( 2 downto 0) := "000";   -- 000=none, 001=2, 010=4, 011=8
     constant ACCESS_TYPE            : std_logic                     := '0';     -- 0=sequential, 1=interleaved
@@ -70,18 +69,13 @@ architecture rtl of sdram is
             ACCESS_TYPE &
             BURST_LENGTH;
 
-    constant STATE_IDLE             : natural   := 0;
-    constant STATE_CMD_START        : natural   := 1;
-    constant STATE_CMD_CONT         : natural   := STATE_CMD_START + RASCAS_DELAY - 1;
-    constant STATE_PRELAST          : natural   := 5;
-    constant STATE_LAST             : natural   := 7;
-    type state_t is ( SYNC, IDLE, START, WAITSTATE, CONTINUE, WS, READ);
+    type state_t is ( SYNC, ACTIVATE, WAITSTATE, CONTINUE, READ);
     signal state : state_t;
 
     -- all possible commands
     type cmd_t is ( CMD_INHIBIT, CMD_NOP, CMD_ACTIVE, CMD_READ, CMD_WRITE, CMD_BURST_TERMINATE, CMD_PRECHARGE, CMD_AUTO_REFRESH, CMD_LOAD_MODE);
 
-    function to_sd_cmd( cmd : cmd_t) return std_logic_vector is
+    function to_sd_cmd_slv( cmd : cmd_t) return std_logic_vector is
         variable result :   std_logic_vector( 3 downto 0) := "ZZZZ";
     begin
         case cmd is
@@ -97,11 +91,10 @@ architecture rtl of sdram is
             when CMD_LOAD_MODE          => result := "0000";
         end case;
         return result;
-    end function to_sd_cmd;
+    end function to_sd_cmd_slv;
 
-    signal q            : unsigned( 2 downto 0) := "000";
     signal reset        : unsigned( 4 downto 0) := "11111";
-    signal sd_cmd       : cmd_t; --std_logic_vector( 3 downto 0); -- current command sent to sd ram
+    signal sd_cmd       : cmd_t;
     signal sd_cmd_slv   : std_logic_vector( 3 downto 0); -- current command sent to sd ram
     signal reset_addr   : std_logic_vector( 12 downto 0);
     signal run_addr     : std_logic_vector( 12 downto 0);
@@ -109,55 +102,39 @@ architecture rtl of sdram is
 begin
     
     process
-    begin
-        wait until rising_edge( clk);
-	    -- 32Mhz counter synchronous to 4 Mhz clock
-        -- force counter to pass state 5->6 exactly after the rising edge of clkref
-	    -- since clkref is two clocks early
-        if (( q = 6) and ( clkref = '0')) or
-           (( q = 7) and ( clkref = '1')) or
-           (( q /= 6) and ( q /= 7)) then
-            q   <= q + 1;
-        end if;
-    end process;
-
-    process
         variable clkref_1   : std_logic;
         variable count      : natural range 0 to RASCAS_DELAY - 1;
     begin
         wait until rising_edge( clk);
 
         -- default
-        sd_cmd  <= CMD_INHIBIT;
+        sd_cmd      <= CMD_INHIBIT;
+        run_addr    <= "0010" & addr( 23) & addr( 7 downto 0);
 
         -- fsm
         case state is
 
             when SYNC =>
+                -- wait for rising edge
                 if clkref_1 = '0' and clkref = '1' then
-                    state   <= WAITSTATE;
-                    count   := RASCAS_DELAY - 1; 
-                    if reset = 13 then
-                        sd_cmd  <= CMD_PRECHARGE;
-                    end if;
-                    if reset =  2 then
-                        sd_cmd  <= CMD_LOAD_MODE;
-                    end if;
-                    if reset =  0 then
-                        if we = '1' or oe = '1' then
-                            sd_cmd  <= CMD_ACTIVE;
-                        else
-                            sd_cmd  <= CMD_AUTO_REFRESH;
-                        end if;
-                    end if;
+                    state   <= ACTIVATE;
                 end if;
 
-            when IDLE =>
-                state   <= START;    
-
-            when START =>
+            when ACTIVATE =>
+                count   := RASCAS_DELAY - 1; 
+                run_addr    <= addr( 20 downto 8); 
+                if reset =  0 then
+                    if we = '1' or oe = '1' then
+                        sd_cmd  <= CMD_ACTIVE;
+                    else
+                        sd_cmd  <= CMD_AUTO_REFRESH;
+                    end if;
+                elsif reset =  2 then
+                    sd_cmd  <= CMD_LOAD_MODE;
+                elsif reset = 13 then
+                    sd_cmd  <= CMD_PRECHARGE;
+                end if;
                 state   <= WAITSTATE;
-                count   := count - 1;
 
             when WAITSTATE =>
                 if count > 0 then
@@ -174,9 +151,6 @@ begin
                 end if;
 
             when CONTINUE =>
-                state   <= WS;
-
-            when WS =>
                 state   <= READ;
 
             when READ =>
@@ -198,7 +172,6 @@ begin
         wait until rising_edge( clk);
         if init = '1' then
             reset   <= "11111";
---      elsif q = STATE_PRELAST and reset > 0 then
         elsif state = READ and reset > 0 then
             reset   <= reset - 1;
         end if;
@@ -209,53 +182,18 @@ begin
     -- ---------------------------------------------------------------------
 
     -- drive control signals according to current command
-    sd_cmd_slv  <= to_sd_cmd( sd_cmd);
+    sd_cmd_slv  <= to_sd_cmd_slv( sd_cmd);
     sd_cs       <= sd_cmd_slv( 3);
     sd_ras      <= sd_cmd_slv( 2);
     sd_cas      <= sd_cmd_slv( 1);
     sd_we       <= sd_cmd_slv( 0);
 
-    sd_data <= "00000000" & din when we = '1' else ( others => 'Z');
-
---  dout    <= sd_data( 7 downto 0) when falling_edge( clkref);
-
---  process
---  begin
---      wait until rising_edge( clk);
---      sd_cmd  <= CMD_INHIBIT;
-
---      if reset > 0 then
---          if q = STATE_IDLE then
---              if reset = 13 then
---                  sd_cmd  <= CMD_PRECHARGE;
---              end if;
---              if reset =  2 then
---                  sd_cmd  <= CMD_LOAD_MODE;
---              end if;
---          end if;
---      else
---          if q = STATE_IDLE then
---              if we = '1' or oe = '1' then
---                  sd_cmd  <= CMD_ACTIVE;
---              else
---                  sd_cmd  <= CMD_AUTO_REFRESH;
---              end if;
---          elsif q = STATE_CMD_CONT then
---              if we = '1' then
---                  sd_cmd  <= CMD_WRITE;
---              elsif oe = '1' then
---                  sd_cmd  <= CMD_READ;
---              end if;
---          end if;
---      end if;
---  end process;
+    sd_data     <= "00000000" & din when we = '1' else ( others => 'Z');
 
     reset_addr  <= "0010000000000" when reset = 13 else MODE;
 
---  run_addr    <= addr( 20 downto 8) when q = STATE_CMD_START else "0010" & addr( 23) & addr( 7 downto 0);
-    run_addr    <= addr( 20 downto 8) when state = START else "0010" & addr( 23) & addr( 7 downto 0);
 
-    sd_addr     <= reset_addr when reset > 0 else run_addr;
+    sd_addr     <= run_addr when reset = 0 else reset_addr;
     sd_ba       <= addr( 22 downto 21);
     sd_dqm      <= "11" when reset = 31 else "00";
 
