@@ -451,6 +451,7 @@ begin
 
     joystick_emu_inst: entity work.joystick_emu
     port map (
+        clk             => cpu_clk,             -- : in  std_logic;
         mode            => joystick_mode,       -- : in  std_logic_vector( 1 downto 0);
         --
         joystick_0      => joystick_0,          -- : in  std_logic_vector( 7 downto 0);

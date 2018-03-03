@@ -164,11 +164,13 @@ architecture rtl of user_io is
     -- scancode synchronizer
     signal scancode_toggle      : std_logic := '0';
     signal scancode_toggle_1    : std_logic := '0';
+    signal scancode_reg         : std_logic_vector( 7 downto 0);
 
 
 begin
 
-    status      <= status_reg;
+    status      <= status_reg   when rising_edge( clk);
+    scancode    <= scancode_reg when rising_edge( clk);
 
     buttons     <= but_sw( 1 downto 0);
     switches    <= but_sw( 3 downto 2);
@@ -455,7 +457,7 @@ begin
                             ps2_kbd_fifo( to_integer(ps2_kbd_wptr)) <= sbuf & SPI_MOSI; 
                             ps2_kbd_wptr <= ps2_kbd_wptr + 1;
                             -- 
-                            scancode        <= sbuf & SPI_MOSI;
+                            scancode_reg    <= sbuf & SPI_MOSI;
                             scancode_toggle <= not scancode_toggle;
 
                         when x"15" =>

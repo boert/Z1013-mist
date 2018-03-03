@@ -63,14 +63,16 @@ architecture rtl of data_io is
     --
     signal downloading_reg  : std_logic := '0';
     signal addr_reg         : unsigned( 24 downto 0);
+    signal data_reg         : std_logic_vector( 7 downto 0);
     --
     signal rclkD            : std_logic;
     signal rclkD2           : std_logic;
 
 begin
 
-    downloading <= downloading_reg;
-    addr        <= std_logic_vector( addr_reg);
+    downloading <= downloading_reg              when rising_edge( clk);
+    addr        <= std_logic_vector( addr_reg)  when rising_edge( clk);
+    data        <= data_reg                     when rising_edge( clk);
 
     -- data_io has its own SPI interface to the io controller
     process( sck, ss)
@@ -117,8 +119,8 @@ begin
 
             -- command 0x54: UIO_FILE_TX
             if( cmd = UIO_FILE_TX_DAT) and ( cnt = 15) then
-                data    <= sbuf & sdi;
-                rclk    <= '1';
+                data_reg    <= sbuf & sdi;
+                rclk        <= '1';
             end if;
 
             -- expose file (menu) index
@@ -139,7 +141,7 @@ begin
         wr      <= '0';
 
         if( rclkD = '1') and ( rclkD2 = '0') then
-            wr  <= '1';
+            wr      <= '1';
         end if;
     end process;
 

@@ -132,7 +132,7 @@ begin
   --read/write control register
   process(clk)
   begin
-    if falling_edge(clk) then
+    if rising_edge(clk) then
       if ctrl_selected then
         if rd_n = '1' then
           wr_dir_reg_q  <= false;

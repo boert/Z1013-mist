@@ -93,7 +93,7 @@ catch:
 	#
 	# catch generate core file
 	#
-	cp  output_files/$(PROJECT).rbf  core_z1013.rbf
+	cp  output_files/$(PROJECT).rbf  core_z1013_64.rbf
 	#
 	# ready!
 	#

@@ -84,6 +84,9 @@ derive_clock_uncertainty
 #**************************************************************
 
 set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {clk_27[0]}]
+set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {altpll0_inst|altpll_component|auto_generated|pll1|clk[2]}]
+set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {altpll0_inst|altpll_component|auto_generated|pll1|clk[3]}]
+set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {altpll0_inst|altpll_component|auto_generated|pll1|clk[4]}]
 
 
 #**************************************************************
@@ -95,7 +98,7 @@ set_false_path -from [get_clocks {spi_sck}] -to [get_clocks {clk_27[0]}]
 #**************************************************************
 # Set Maximum Delay
 #**************************************************************
-
+      
 
 
 #**************************************************************
