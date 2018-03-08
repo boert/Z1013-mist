@@ -83,6 +83,12 @@ package mist_components is
 
 
     component osd is
+    generic
+    (
+        OSD_X_OFFSET        : natural   := 0;
+        OSD_Y_OFFSET        : natural   := 0;
+        OSD_COLOR           : natural   := 0
+    );
     port
     (
         -- OSDs pixel clock

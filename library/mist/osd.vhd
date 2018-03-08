@@ -2,7 +2,7 @@
 -- A simple OSD implementation. Can be hooked up between a cores
 -- VGA output and the physical VGA pins
 --
--- Copyright (c) 2017,2018 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 --
 -- This source file is free software: you can redistribute it and/or modify
@@ -219,8 +219,8 @@ begin
     end process;
 
     -- area in which OSD is being displayed
-    h_osd_start <= h_dsp_ctr + OSD_X_OFFSET - (OSD_WIDTH / 2);
-    h_osd_end   <= h_dsp_ctr + OSD_X_OFFSET + (OSD_WIDTH / 2) - 1;
+    h_osd_start <= h_dsp_ctr + OSD_X_OFFSET - 10 - (OSD_WIDTH / 2);
+    h_osd_end   <= h_dsp_ctr + OSD_X_OFFSET - 10 + (OSD_WIDTH / 2) - 1;
     v_osd_start <= v_dsp_ctr + OSD_Y_OFFSET - (OSD_HEIGHT / 2);
     v_osd_end   <= v_dsp_ctr + OSD_Y_OFFSET + (OSD_HEIGHT / 2) - 1;
 

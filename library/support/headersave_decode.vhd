@@ -2,7 +2,7 @@
 -- converter between data_io and memory
 -- to load .z80 files to the correct address
 -- 
--- Copyright (c) 2017 by Bert Lange
+-- Copyright (c) 2017, 2018 by Bert Lange
 -- https://github.com/boert/Z1013-mist
 -- 
 -- This source file is free software: you can redistribute it and/or modify
@@ -60,7 +60,9 @@ architecture rtl of headersave_decode is
     -- time to show the loading message (15 seconds)
     constant display_counter_max : natural := 15 * clk_frequency - 1;
 
-    -- helper function, convert unsigned to hex charachter
+	constant type_autorun : unsigned( 7 downto 0) := to_unsigned( character'pos( 'C'), 8);
+
+    -- helper function, convert unsigned to hex character
     function to_hex( val: unsigned( 3 downto 0)) return character is
         variable result : character;
     begin
@@ -274,7 +276,7 @@ begin
 
 
             when START =>
-                if v.start_addr /= x"0000" then
+                if v.start_addr /= x"0000" and v.file_type = type_autorun then
                     v.autostart_en      := '1';
                 end if;
                 v.state := IDLE;

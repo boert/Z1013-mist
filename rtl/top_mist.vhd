@@ -623,24 +623,24 @@ begin
     port map
     (
         active          => user_io_status( help_bit), -- : in  std_logic;
-        pixel_clock     => video_clk60,            -- : in  std_logic;
-        -- input signals
-        red             => scanline_red_out,       -- : in  std_logic_vector( 5 downto 0);
-        green           => scanline_green_out,     -- : in  std_logic_vector( 5 downto 0);
-        blue            => scanline_blue_out,      -- : in  std_logic_vector( 5 downto 0);
-        hsync           => scanline_hsync_out,     -- : in  std_logic;
-        vsync           => scanline_vsync_out,     -- : in  std_logic;
-        -- message stuff
-        show_message    => hs_show_message,        -- : in  std_logic;    -- enable or disable message display
-        message_en      => hs_message_en,          -- : in  std_logic;    -- 0->1 take new message character
-        message         => hs_message,             -- : in  character;
-        message_restart => hs_message_restart,     -- : in  std_logic;    -- restart with new message
-        -- output signals
-        red_out         => onlinehelp_red_out,     -- : out std_logic_vector( 5 downto 0);
-        green_out       => onlinehelp_green_out,   -- : out std_logic_vector( 5 downto 0);
-        blue_out        => onlinehelp_blue_out,    -- : out std_logic_vector( 5 downto 0);
-        hsync_out       => onlinehelp_hsync_out,   -- : out std_logic;
-        vsync_out       => onlinehelp_vsync_out    -- : out std_logic
+        pixel_clock     => video_clk60,             -- : in  std_logic;
+        -- input signals                            
+        red             => scanline_red_out,        -- : in  std_logic_vector( 5 downto 0);
+        green           => scanline_green_out,      -- : in  std_logic_vector( 5 downto 0);
+        blue            => scanline_blue_out,       -- : in  std_logic_vector( 5 downto 0);
+        hsync           => scanline_hsync_out,      -- : in  std_logic;
+        vsync           => scanline_vsync_out,      -- : in  std_logic;
+        -- message stuff                            
+        show_message    => hs_show_message,         -- : in  std_logic;    -- enable or disable message display
+        message_en      => hs_message_en,           -- : in  std_logic;    -- 0->1 take new message character
+        message         => hs_message,              -- : in  character;
+        message_restart => hs_message_restart,      -- : in  std_logic;    -- restart with new message
+        -- output signals                           
+        red_out         => onlinehelp_red_out,      -- : out std_logic_vector( 5 downto 0);
+        green_out       => onlinehelp_green_out,    -- : out std_logic_vector( 5 downto 0);
+        blue_out        => onlinehelp_blue_out,     -- : out std_logic_vector( 5 downto 0);
+        hsync_out       => onlinehelp_hsync_out,    -- : out std_logic;
+        vsync_out       => onlinehelp_vsync_out     -- : out std_logic
     );
 
 
@@ -648,23 +648,23 @@ begin
     port map
     (
         -- OSDs pixel clock
-        pclk           => video_clk60,         -- : in  std_logic;
-        -- SPI interface                       -- 
-        sck            => spi_sck,             -- : in  std_logic;
-        ss             => spi_ss3,             -- : in  std_logic;
-        sdi            => spi_di,              -- : in  std_logic;
+        pclk            => video_clk60,             -- : in  std_logic;
+        -- SPI interface                           
+        sck             => spi_sck,                 -- : in  std_logic;
+        ss              => spi_ss3,                 -- : in  std_logic;
+        sdi             => spi_di,                  -- : in  std_logic;
         -- VGA signals coming from core
-        red_in         => onlinehelp_red_out,    -- : in  std_logic_vector( 5 downto 0);
-        green_in       => onlinehelp_green_out,  -- : in  std_logic_vector( 5 downto 0);
-        blue_in        => onlinehelp_blue_out,   -- : in  std_logic_vector( 5 downto 0);
-        hs_in          => onlinehelp_hsync_out,  -- : in  std_logic;
-        vs_in          => onlinehelp_vsync_out,  -- : in  std_logic;
+        red_in          => onlinehelp_red_out,      -- : in  std_logic_vector( 5 downto 0);
+        green_in        => onlinehelp_green_out,    -- : in  std_logic_vector( 5 downto 0);
+        blue_in         => onlinehelp_blue_out,     -- : in  std_logic_vector( 5 downto 0);
+        hs_in           => onlinehelp_hsync_out,    -- : in  std_logic;
+        vs_in           => onlinehelp_vsync_out,    -- : in  std_logic;
         -- VGA signals going to video connector
-        red_out        => vga_red,             -- : out std_logic_vector( 5 downto 0);
-        green_out      => vga_green,           -- : out std_logic_vector( 5 downto 0);
-        blue_out       => vga_blue,            -- : out std_logic_vector( 5 downto 0);
-        hs_out         => vga_hsync,           -- : out std_logic;
-        vs_out         => vga_vsync            -- : out std_logic
+        red_out         => vga_red,                 -- : out std_logic_vector( 5 downto 0);
+        green_out       => vga_green,               -- : out std_logic_vector( 5 downto 0);
+        blue_out        => vga_blue,                -- : out std_logic_vector( 5 downto 0);
+        hs_out          => vga_hsync,               -- : out std_logic;
+        vs_out          => vga_vsync                -- : out std_logic
     );
 
 end architecture rtl;

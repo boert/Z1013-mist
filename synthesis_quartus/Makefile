@@ -91,9 +91,10 @@ tan:
 catch:
 	##############################
 	#
-	# catch generate core file
+	# catch generated core file
 	#
 	cp  output_files/$(PROJECT).rbf  core_z1013_64.rbf
+	cp  output_files/$(PROJECT).rbf  core.rbf
 	#
 	# ready!
 	#

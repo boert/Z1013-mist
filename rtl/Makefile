@@ -18,7 +18,7 @@
 
 
 DATE = $(shell LANG=C date +"%F %R")
-VERSION = "v2018.02"
+VERSION = "V2018_03"
 
 
 all: init_message_pkg.vhd
