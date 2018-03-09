@@ -13,7 +13,12 @@ There exists two variants for MiST platform:
 
 ## Getting started with Z1013.01
 
-Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the MiST device.
+Copy the core (rename core_z1013_01.rbf to core.rbf) on your SD card and start the MiST device.
+
+## Getting started with Z1013.64
+
+Copy the core (rename core_z1013_64.rbf to core.rbf) on your SD card and start the MiST device.
+
 
 ### Overview of OSD options
 | feature           | values

@@ -82,8 +82,8 @@ programs working with joystick (ERF-Soft):
 
 not working files       remark
 -----------------       ------
-heartrunner__bro.z80    (brosig monitor?)
-kings_valley_bro.z80    (brosig monitor?)
-spiele_1.z80            seem defect
+heartrunner__bro.z80    (brosig monitor?)  
+kings_valley_bro.z80    (brosig monitor?)  
+spiele_1.z80            seem defect  
 [C.AUTO-3D\_-J.z80](http://z1013.mrboot.de/software-database/db/801da1c70ad41eaad93c1bf4449d42c2-C.AUTO-3D_-J/index.html) (brosig monitor?)  
 [C.WURM.z80](http://z1013.mrboot.de/software-database/db/85d312e4730a0e0d7c3b8dd2c0cb4408-C.WURM/index.html) (brosig monitor?)  
