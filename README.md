@@ -1,31 +1,32 @@
 # Z1013-mist                                                                                                                                                                         
-The robotron Z1013 port for the mist board.
+The robotron Z1013 port for the MiST board.
 
 
 ## Overview
-This project emulates a robotron Z 1013 computer from 1984.
-The original Z 1013 was sold as a kit (without case and power supply).
+This project emulates a robotron Z 1013 computer from 1984/1985.
+The original Z 1013 was sold as a kit (without case and without power supply).
 
-This Z1013.01 emulation use 2 MHz clock frequency and is equipped with 16 kByte RAM.
+There exists two variants for MiST platform:
+- Z1013.01 with 2 MHz clock frequency and 16 kByte RAM
+- Z1013.64 with 2/4 MHz clock frequency and 64 kByte RAM
 
 
 ## Getting started with Z1013.01
 
-Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the mist device.
+Copy the core (rename core_z1013.rbf to core.rbf) on your SD card and start the MiST device.
 
 ### Overview of OSD options
 | feature           | values
 | ---               | ---
-| Load *.Z80        | load from SD card
-| Scanlines         | on/off
+| Load *.Z80        | load file from SD card into RAM
+| Decoration        | Scanlines (on/off), Color scheme (black&white or blue&yellow)
 | Keyboard layout   | de/en
 | Online help       | on/off
-| Color scheme      | black&white or blue&yellow
-| Joystick mode     | practic 1/88 or ju+te 6/87
+| Joystick mode     | practic 1/88, ju+te 6/87, practic 4/87 or ERF-Soft
 | Autostart         | enable/disable
 
 When the Z1013 is running, you can load .z80-files via the OSD direct into the memory.
-Name, type, load address, end address and start address of the loaded file is show on top of screen.
+Name, type, load address, end address and start address of the loaded file is show on status line (top of screen).
 When Autostart is enabled (default) then the program will be started automaticly.
 This works only from monitor (the operating system), because some keypresses need to be emulated.
 Otherwise ```J <start address>```  will also jump to the start program.
@@ -46,9 +47,11 @@ Z1013.01:
 - sound output PIO B7 or user port (PIO A)
 
 Z1013.64 (with "Peters-Extension"):
+- 64 kByte RAM (0000h - FFFFh)
 - 64x16 character video output, port 04h, bit 7
 - frequency switching 2 MHz/ 4 MHz, port 04h, bit 6
 - 2nd character ROM (umlauts, control chars & inverse), port 04h, bit 5
+- ROM (F000h - F7FFh) disable, port 04h, bit 4
 
 MiST additions:
 - map video output to 800x600@60MHz (SVGA)
@@ -56,10 +59,12 @@ MiST additions:
 - display file information on status line
 - autostart z80-files
 - scanline support
-- online help for most monitor commands
+- online help for major monitor commands
 - switchable color scheme
 - switchable keyboard layout (en/de)
-- right push button on mist for reset
+- right push button on MiST for Z1013 reset
+- middle push button on MiST or F12  for OSD
+- left push button on MiST for MiST reboot
 
 ![Z1013 with OSD (center), online help (right) and status line (top)](https://raw.githubusercontent.com/boert/Z1013-mist/master/documentation/Screenshot_Z1013_on_MiST.jpg)
 
@@ -69,6 +74,7 @@ MiST additions:
 | ---                    | ---    
 | contrib                | code used from other projects
 | cores                  | stuff generated with MegaWizard
+| documentation          | some basic documents
 | library                | helper source code
 | ROMs                   | monitor ROMs for Z1013
 | rtl                    | source code
